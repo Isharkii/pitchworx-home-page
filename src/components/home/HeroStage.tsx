@@ -101,8 +101,8 @@ export function HeroStage() {
 
     setSwipeIndex((prev) => {
       const current = prev ?? CENTER_INDEX;
-      if (info.offset.x < 0) return Math.min(current + 1, TOTAL - 1); // swipe left  → next
-      return Math.max(current - 1, 0);                                  // swipe right → prev
+      if (info.offset.x < 0) return Math.max(current - 1, 0);          // swipe left  → prev (left card)
+      return Math.min(current + 1, TOTAL - 1);                          // swipe right → next (right card)
     });
   }
 
