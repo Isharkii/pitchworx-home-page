@@ -3,20 +3,20 @@
 /**
  * HeroStage — 3-phase animated card gallery
  *
- * Phase 1 (0 → ~1200ms)
- *   A single lead card enters from below with a spring that has slight
- *   overshoot (low damping). Represents the "arrival" beat.
+ * Phase 1 (0 → ~700ms)
+ *   Lead card springs in from below.
  *
- * Phase 2 (~1200ms → ~2200ms)
- *   Lead card rests at center. ~800ms of intentional pause — editorial pacing.
+ * Phase 2 (~700ms → ~1400ms)
+ *   Lead card rests at center — editorial pause.
  *
- * Phase 3 (~2200ms → ∞)
- *   Lead card fades out; 7 gallery cards fan into a horizontal arc using
- *   positions from getArcStyle(). Stagger delay creates a spreading motion.
- *   Mouse parallax and card hover interactions activate in this phase.
+ * Phase 3 (~1400ms → ∞)
+ *   Lead card fades; 7 gallery cards fan into a horizontal arc.
  *
- * Accessibility: prefers-reduced-motion skips phases 1–2 and jumps straight
- * to the static arc (phase 3, no stagger, no parallax).
+ *   Desktop  — mouse hover highlights a card (scale 1.05, siblings blur).
+ *   Mobile   — swipe left/right cycles the highlight through the arc.
+ *              The arc itself never pans; only the focus moves.
+ *
+ * Accessibility: prefers-reduced-motion skips to phase 3 immediately.
  */
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -41,143 +41,69 @@ const leadProject: ProjectCardData = {
 };
 
 const galleryProjects: ProjectCardData[] = [
-  {
-    id: "hiring",
-    title: "Hiring",
-    eyebrow: "Campaign system",
-    image: hiringImage,
-    alt: "Blue hiring campaign boards arranged in a large presentation mosaic.",
-  },
-  {
-    id: "beato",
-    title: "BeatO",
-    eyebrow: "Product story",
-    image: beatoImage,
-    alt: "BeatO product deck with portrait and surrounding product slides.",
-  },
-  {
-    id: "reeblo",
-    title: "Reeblo",
-    eyebrow: "Partner deck",
-    image: reebloImage,
-    alt: "Reeblo vendor partner deck slides on a white presentation board.",
-  },
-  {
-    id: "craft",
-    title: "Craft",
-    eyebrow: "Packaging story",
-    image: craftImage,
-    alt: "Craft Juices lime presentation slide with layered fruit photography.",
-  },
-  {
-    id: "indeed",
-    title: "Indeed",
-    eyebrow: "Rollout frames",
-    image: hiringImage,
-    alt: "A branded Indeed campaign layout with large blue circular graphics.",
-  },
-  {
-    id: "platform",
-    title: "Platform",
-    eyebrow: "Deck system",
-    image: beatoImage,
-    alt: "Healthcare presentation mockups with portrait and product UI.",
-  },
-  {
-    id: "brand",
-    title: "Brand",
-    eyebrow: "Identity system",
-    image: reebloImage,
-    alt: "Brand identity slides with a clean editorial layout.",
-  },
+  { id: "hiring",   title: "Hiring",   eyebrow: "Campaign system",  image: hiringImage, alt: "Blue hiring campaign boards." },
+  { id: "beato",    title: "BeatO",    eyebrow: "Product story",    image: beatoImage,  alt: "BeatO product deck." },
+  { id: "reeblo",   title: "Reeblo",   eyebrow: "Partner deck",     image: reebloImage, alt: "Reeblo vendor deck slides." },
+  { id: "craft",    title: "Craft",    eyebrow: "Packaging story",  image: craftImage,  alt: "Craft Juices presentation." },
+  { id: "indeed",   title: "Indeed",   eyebrow: "Rollout frames",   image: hiringImage, alt: "Indeed campaign layout." },
+  { id: "platform", title: "Platform", eyebrow: "Deck system",      image: beatoImage,  alt: "Healthcare presentation mockups." },
+  { id: "brand",    title: "Brand",    eyebrow: "Identity system",  image: reebloImage, alt: "Brand identity slides." },
 ];
 
-const TOTAL = galleryProjects.length; // 7
-const CENTER_INDEX = Math.floor(TOTAL / 2); // 3
+const TOTAL        = galleryProjects.length;     // 7
+const CENTER_INDEX = Math.floor(TOTAL / 2);      // 3
 
-// ─── Spring configs ─────────────────────────────────────────────────────────────
+// ─── Spring configs ────────────────────────────────────────────────────────────
 
-/** Smooth entry for the lead card — higher damping removes bounce */
-const springEntry = { type: "spring", stiffness: 90, damping: 22 } as const;
-
-/** Crisp arc landing for gallery cards (phase 3) */
+const springEntry   = { type: "spring", stiffness: 90,  damping: 22 } as const;
 const springGallery = { type: "spring", stiffness: 100, damping: 20 } as const;
-
-/** Slow-follow for mouse parallax */
-const springParallax = { type: "spring", stiffness: 60, damping: 20 } as const;
-
-// ─── Carousel variants (mobile swipe) ──────────────────────────────────────────
-
-const carouselVariants = {
-  enter: (dir: number) => ({ x: dir > 0 ? "75%" : "-75%", opacity: 0, scale: 0.88 }),
-  center: { x: 0, opacity: 1, scale: 1 },
-  exit: (dir: number) => ({ x: dir > 0 ? "-75%" : "75%", opacity: 0, scale: 0.88 }),
-};
+const springParallax= { type: "spring", stiffness: 60,  damping: 20 } as const;
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 type Phase = 1 | 2 | 3;
 
 export function HeroStage() {
-  const [phase, setPhase] = useState<Phase>(1);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [mouse, setMouse] = useState({ x: 0, y: 0 }); // normalised −1 … +1
-  const [isMobile, setIsMobile] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(CENTER_INDEX);
-  const [swipeDir, setSwipeDir] = useState(0); // 1 = forward, -1 = back
+  const [phase,      setPhase]      = useState<Phase>(1);
+  const [hoveredId,  setHoveredId]  = useState<string | null>(null);
+  const [swipeIndex, setSwipeIndex] = useState<number | null>(null);
+  const [mouse,      setMouse]      = useState({ x: 0, y: 0 });
   const reduceMotion = useReducedMotion();
+
+  // The "active" card: mouse hover takes priority, then touch swipe focus
+  const activeId = hoveredId ?? (swipeIndex !== null ? galleryProjects[swipeIndex].id : null);
 
   // ── Phase sequencing ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (reduceMotion) {
-      // Skip intro — show final arc immediately
-      setPhase(3);
-      return;
-    }
-
-    const t1 = window.setTimeout(() => setPhase(2), 700);  // entry → pause
-    const t2 = window.setTimeout(() => setPhase(3), 1400); // pause → arc
-
-    return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-    };
+    if (reduceMotion) { setPhase(3); return; }
+    const t1 = window.setTimeout(() => setPhase(2), 700);
+    const t2 = window.setTimeout(() => setPhase(3), 1400);
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
   }, [reduceMotion]);
 
-  // ── Mobile detection ─────────────────────────────────────────────────────────
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    setIsMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-
-  // ── Mouse parallax ────────────────────────────────────────────────────────────
+  // ── Mouse parallax (desktop) ──────────────────────────────────────────────────
   useEffect(() => {
     if (reduceMotion) return;
-
-    const onMouseMove = (e: MouseEvent) => {
-      setMouse({
-        x: (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2),
-        y: (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2),
-      });
-    };
-
-    window.addEventListener("mousemove", onMouseMove);
-    return () => window.removeEventListener("mousemove", onMouseMove);
+    const onMove = (e: MouseEvent) => setMouse({
+      x: (e.clientX - window.innerWidth  / 2) / (window.innerWidth  / 2),
+      y: (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2),
+    });
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
   }, [reduceMotion]);
 
-  // ── Carousel swipe handler ────────────────────────────────────────────────────
-  function handleSwipe(_: unknown, info: { offset: { x: number } }) {
+  // ── Swipe handler (mobile) ────────────────────────────────────────────────────
+  // The drag container has near-zero elastic so the arc stays visually still.
+  // The gesture is read for direction only; focus advances through galleryProjects.
+  function handleArcSwipe(_: unknown, info: { offset: { x: number } }) {
     const threshold = 40;
-    if (info.offset.x < -threshold && activeIndex < TOTAL - 1) {
-      setSwipeDir(1);
-      setActiveIndex((i) => i + 1);
-    } else if (info.offset.x > threshold && activeIndex > 0) {
-      setSwipeDir(-1);
-      setActiveIndex((i) => i - 1);
-    }
+    if (Math.abs(info.offset.x) < threshold) return;
+
+    setSwipeIndex((prev) => {
+      const current = prev ?? CENTER_INDEX;
+      if (info.offset.x < 0) return Math.min(current + 1, TOTAL - 1); // swipe left  → next
+      return Math.max(current - 1, 0);                                  // swipe right → prev
+    });
   }
 
   return (
@@ -196,112 +122,84 @@ export function HeroStage() {
             style={{ willChange: "transform", zIndex: 20 }}
             className="absolute left-1/2 top-1/2"
           >
-            <ProjectCard
-              project={leadProject}
-              isCenter
-              priority
-              className="-translate-x-1/2 -translate-y-1/2"
-            />
+            <ProjectCard project={leadProject} isCenter priority className="-translate-x-1/2 -translate-y-1/2" />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Phase 3: Desktop arc gallery ────────────────────────────────────────
-          7 cards fan out in a horizontal arc. Float + parallax + hover blur. */}
+      {/* ── Phase 3: Arc gallery ────────────────────────────────────────────────
+          Always rendered as an arc (desktop + mobile).
+          Desktop: mouse hover sets the active card.
+          Mobile: swipe on the invisible drag layer cycles activeId through the arc. */}
       <AnimatePresence>
-        {phase === 3 && !isMobile &&
-          galleryProjects.map((project, index) => {
-            const arc = getArcStyle(index, TOTAL);
-            const isCenter = index === CENTER_INDEX;
-            const isHovered = hoveredId === project.id;
-            const isBlurred = hoveredId !== null && !isHovered;
+        {phase === 3 && (
+          <>
+            {/* Invisible drag surface — mobile swipe to cycle highlight.
+                dragElastic is near-zero so the arc never visually shifts. */}
+            <motion.div
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.04}
+              dragMomentum={false}
+              onDragEnd={handleArcSwipe}
+              className="absolute inset-0 z-30 touch-pan-y md:pointer-events-none"
+              aria-hidden
+            />
 
-            const depth = 1 - Math.abs(index - CENTER_INDEX) / TOTAL;
-            const pX = reduceMotion ? 0 : mouse.x * 6 * depth;
-            const pY = reduceMotion ? 0 : mouse.y * 4 * depth;
+            {galleryProjects.map((project, index) => {
+              const arc      = getArcStyle(index, TOTAL);
+              const isCenter = index === CENTER_INDEX;
+              const isActive = activeId === project.id;
+              const isBlurred= activeId !== null && !isActive;
 
-            return (
-              <motion.div
-                key={project.id}
-                initial={{ x: 0, y: 0, rotate: 0, scale: 0.6, opacity: 0 }}
-                animate={{ x: arc.x, y: arc.y, rotate: arc.rotate, scale: arc.scale, opacity: 1 }}
-                exit={{ x: 0, y: 0, rotate: 0, scale: 0.6, opacity: 0, transition: { duration: 0.16 } }}
-                transition={{ ...springGallery, delay: reduceMotion ? 0 : index * 0.06 }}
-                style={{ willChange: "transform", zIndex: arc.zIndex, position: "absolute", left: "50%", top: "50%" }}
-                onHoverStart={() => setHoveredId(project.id)}
-                onHoverEnd={() => setHoveredId(null)}
-              >
-                {/* Float oscillation — staggered per card */}
+              const depth = 1 - Math.abs(index - CENTER_INDEX) / TOTAL;
+              const pX = reduceMotion ? 0 : mouse.x * 6 * depth;
+              const pY = reduceMotion ? 0 : mouse.y * 4 * depth;
+
+              return (
                 <motion.div
-                  animate={reduceMotion ? {} : { y: [0, -10, 0] }}
-                  transition={{ duration: 2.6 + index * 0.22, repeat: Infinity, ease: "easeInOut", delay: index * 0.35 }}
-                  style={{ willChange: "transform" }}
+                  key={project.id}
+                  // Arc position
+                  initial={{ x: 0, y: 0, rotate: 0, scale: 0.6, opacity: 0 }}
+                  animate={{ x: arc.x, y: arc.y, rotate: arc.rotate, scale: arc.scale, opacity: 1 }}
+                  exit={{ x: 0, y: 0, rotate: 0, scale: 0.6, opacity: 0, transition: { duration: 0.16 } }}
+                  transition={{ ...springGallery, delay: reduceMotion ? 0 : index * 0.06 }}
+                  style={{ willChange: "transform", zIndex: arc.zIndex, position: "absolute", left: "50%", top: "50%" }}
+                  // Desktop hover
+                  onHoverStart={() => setHoveredId(project.id)}
+                  onHoverEnd={() => setHoveredId(null)}
                 >
-                  {/* Parallax + hover scale + sibling blur */}
+                  {/* Float oscillation */}
                   <motion.div
-                    animate={{ x: pX, y: pY, scale: isHovered ? 1.05 : 1, filter: isBlurred ? "blur(3px)" : "blur(0px)" }}
-                    transition={{ x: springParallax, y: springParallax, scale: { type: "spring", stiffness: 300, damping: 20 }, filter: { duration: 0.2 } }}
+                    animate={reduceMotion ? {} : { y: [0, -10, 0] }}
+                    transition={{ duration: 2.6 + index * 0.22, repeat: Infinity, ease: "easeInOut", delay: index * 0.35 }}
                     style={{ willChange: "transform" }}
                   >
-                    <ProjectCard project={project} isCenter={isCenter} className="-translate-x-1/2 -translate-y-1/2" />
+                    {/* Parallax + active scale + sibling blur */}
+                    <motion.div
+                      animate={{
+                        x: pX,
+                        y: pY,
+                        scale: isActive ? 1.05 : 1,
+                        filter: isBlurred ? "blur(3px)" : "blur(0px)",
+                      }}
+                      transition={{
+                        x: springParallax,
+                        y: springParallax,
+                        scale:  { type: "spring", stiffness: 300, damping: 20 },
+                        filter: { duration: 0.2 },
+                      }}
+                      style={{ willChange: "transform" }}
+                    >
+                      <ProjectCard project={project} isCenter={isCenter} className="-translate-x-1/2 -translate-y-1/2" />
+                    </motion.div>
                   </motion.div>
                 </motion.div>
-              </motion.div>
-            );
-          })}
+              );
+            })}
+          </>
+        )}
       </AnimatePresence>
-
-      {/* ── Phase 3: Mobile swipe carousel ──────────────────────────────────────
-          One card visible at a time. Swipe left/right to step through all 7.
-          AnimatePresence key on activeIndex drives the slide-in/out transition. */}
-      {phase === 3 && isMobile && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden">
-          <div className="relative flex h-full w-full items-center justify-center">
-            <AnimatePresence initial={false} custom={swipeDir} mode="popLayout">
-              <motion.div
-                key={activeIndex}
-                custom={swipeDir}
-                variants={carouselVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ type: "spring", stiffness: 280, damping: 28 }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.18}
-                onDragEnd={handleSwipe}
-                style={{ willChange: "transform", position: "absolute" }}
-              >
-                {/* Float oscillation on active card */}
-                <motion.div
-                  animate={reduceMotion ? {} : { y: [0, -10, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                  style={{ willChange: "transform" }}
-                >
-                  <ProjectCard project={galleryProjects[activeIndex]} isCenter />
-                </motion.div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          {/* Dot indicators */}
-          <div className="absolute bottom-10 flex items-center gap-2">
-            {galleryProjects.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-label={`Go to card ${i + 1}`}
-                onClick={() => { setSwipeDir(i > activeIndex ? 1 : -1); setActiveIndex(i); }}
-                className={`rounded-full transition-all duration-300 ${
-                  i === activeIndex
-                    ? "h-2 w-6 bg-black/60"
-                    : "h-2 w-2 bg-black/20"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
