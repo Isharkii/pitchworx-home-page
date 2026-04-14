@@ -174,9 +174,9 @@ export function SiteNavbar() {
           <Image
             src="/logo.png"
             alt="PitchWorx"
-            width={150}
-            height={150}
-            className="logo-adaptive h-[150px] w-[150px] object-contain"
+            width={80}
+            height={80}
+            className="logo-adaptive h-[80px] w-[80px] object-contain"
             priority
           />
         </a>

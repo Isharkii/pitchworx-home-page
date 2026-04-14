@@ -178,80 +178,105 @@ export function HeroStage() {
           7 cards fan out from center into a horizontal arc. Each card gets:
           - Arc position from getArcStyle() (vw/vh, responsive)
           - Stagger delay so cards spread sequentially
+          - Continuous float oscillation (staggered per card, organic feel)
           - Mouse parallax offset on an inner wrapper (px, slow-follow spring)
-          - Hover: scale 1.05 + blur for non-hovered siblings */}
+          - Hover: scale 1.05 + blur for non-hovered siblings
+          - Drag: horizontal swipe to pan the arc on mobile */}
       <AnimatePresence>
-        {phase === 3 &&
-          galleryProjects.map((project, index) => {
-            const arc = getArcStyle(index, TOTAL);
-            const isCenter = index === CENTER_INDEX;
-            const isHovered = hoveredId === project.id;
-            const isBlurred = hoveredId !== null && !isHovered;
+        {phase === 3 && (
+          <motion.div
+            drag="x"
+            dragConstraints={{ left: -160, right: 160 }}
+            dragElastic={0.12}
+            dragMomentum
+            dragTransition={{ bounceStiffness: 200, bounceDamping: 30 }}
+            onDragStart={() => setHoveredId(null)}
+            className="absolute inset-0"
+          >
+            {galleryProjects.map((project, index) => {
+              const arc = getArcStyle(index, TOTAL);
+              const isCenter = index === CENTER_INDEX;
+              const isHovered = hoveredId === project.id;
+              const isBlurred = hoveredId !== null && !isHovered;
 
-            // Parallax depth: center cards follow mouse more, edges less
-            const depth = 1 - Math.abs(index - CENTER_INDEX) / TOTAL;
-            const pX = reduceMotion ? 0 : mouse.x * 6 * depth;
-            const pY = reduceMotion ? 0 : mouse.y * 4 * depth;
+              // Parallax depth: center cards follow mouse more, edges less
+              const depth = 1 - Math.abs(index - CENTER_INDEX) / TOTAL;
+              const pX = reduceMotion ? 0 : mouse.x * 6 * depth;
+              const pY = reduceMotion ? 0 : mouse.y * 4 * depth;
 
-            return (
-              <motion.div
-                key={project.id}
-                // Arc position — starts collapsed at center, expands to arc
-                initial={{ x: 0, y: 0, rotate: 0, scale: 0.6, opacity: 0 }}
-                animate={{
-                  x: arc.x,
-                  y: arc.y,
-                  rotate: arc.rotate,
-                  scale: arc.scale,
-                  opacity: 1,
-                }}
-                exit={{
-                  x: 0,
-                  y: 0,
-                  rotate: 0,
-                  scale: 0.6,
-                  opacity: 0,
-                  transition: { duration: 0.16 },
-                }}
-                transition={{
-                  ...springGallery,
-                  delay: reduceMotion ? 0 : index * 0.06,
-                }}
-                style={{
-                  willChange: "transform",
-                  zIndex: arc.zIndex,
-                  position: "absolute",
-                  left: "50%",
-                  top: "50%",
-                }}
-                onHoverStart={() => setHoveredId(project.id)}
-                onHoverEnd={() => setHoveredId(null)}
-              >
-                {/* Inner: parallax offset + hover scale + sibling blur */}
+              return (
                 <motion.div
+                  key={project.id}
+                  // Arc position — starts collapsed at center, expands to arc
+                  initial={{ x: 0, y: 0, rotate: 0, scale: 0.6, opacity: 0 }}
                   animate={{
-                    x: pX,
-                    y: pY,
-                    scale: isHovered ? 1.05 : 1,
-                    filter: isBlurred ? "blur(3px)" : "blur(0px)",
+                    x: arc.x,
+                    y: arc.y,
+                    rotate: arc.rotate,
+                    scale: arc.scale,
+                    opacity: 1,
+                  }}
+                  exit={{
+                    x: 0,
+                    y: 0,
+                    rotate: 0,
+                    scale: 0.6,
+                    opacity: 0,
+                    transition: { duration: 0.16 },
                   }}
                   transition={{
-                    x: springParallax,
-                    y: springParallax,
-                    scale: { type: "spring", stiffness: 300, damping: 20 },
-                    filter: { duration: 0.2 },
+                    ...springGallery,
+                    delay: reduceMotion ? 0 : index * 0.06,
                   }}
-                  style={{ willChange: "transform" }}
+                  style={{
+                    willChange: "transform",
+                    zIndex: arc.zIndex,
+                    position: "absolute",
+                    left: "50%",
+                    top: "50%",
+                  }}
+                  onHoverStart={() => setHoveredId(project.id)}
+                  onHoverEnd={() => setHoveredId(null)}
                 >
-                  <ProjectCard
-                    project={project}
-                    isCenter={isCenter}
-                    className="-translate-x-1/2 -translate-y-1/2"
-                  />
+                  {/* Float oscillation — looping y bobble, staggered per card */}
+                  <motion.div
+                    animate={reduceMotion ? {} : { y: [0, -10, 0] }}
+                    transition={{
+                      duration: 2.6 + index * 0.22,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: index * 0.35,
+                    }}
+                    style={{ willChange: "transform" }}
+                  >
+                    {/* Parallax + hover scale + sibling blur */}
+                    <motion.div
+                      animate={{
+                        x: pX,
+                        y: pY,
+                        scale: isHovered ? 1.05 : 1,
+                        filter: isBlurred ? "blur(3px)" : "blur(0px)",
+                      }}
+                      transition={{
+                        x: springParallax,
+                        y: springParallax,
+                        scale: { type: "spring", stiffness: 300, damping: 20 },
+                        filter: { duration: 0.2 },
+                      }}
+                      style={{ willChange: "transform" }}
+                    >
+                      <ProjectCard
+                        project={project}
+                        isCenter={isCenter}
+                        className="-translate-x-1/2 -translate-y-1/2"
+                      />
+                    </motion.div>
+                  </motion.div>
                 </motion.div>
-              </motion.div>
-            );
-          })}
+              );
+            })}
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
