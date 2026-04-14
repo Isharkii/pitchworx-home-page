@@ -29,6 +29,7 @@ import craftImage from "../../../placeholder_images/psd-2-scaled.png";
 
 import { getArcStyle } from "./arc-layout";
 import { ProjectCard, type ProjectCardData } from "./project-card";
+import { SegmentedToggle, type ToggleTab } from "./SegmentedToggle";
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
 
@@ -68,6 +69,7 @@ export function HeroStage() {
   const [hoveredId,  setHoveredId]  = useState<string | null>(null);
   const [swipeIndex, setSwipeIndex] = useState<number | null>(null);
   const [mouse,      setMouse]      = useState({ x: 0, y: 0 });
+  const [activeTab,  setActiveTab]  = useState<ToggleTab>("Custom");
   const reduceMotion = useReducedMotion();
 
   // The "active" card: mouse hover takes priority, then touch swipe focus
@@ -209,6 +211,28 @@ export function HeroStage() {
                 </motion.div>
               );
             })}
+            {/* ── Segmented toggle — floats below the arc ────────────────────────
+                Fades + slides in after cards are fully spread (0.55s delay).
+                z-index 5 keeps it above the background but below card stack. */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20, transition: { duration: 0.16 } }}
+              transition={{
+                opacity: { duration: 0.4, delay: reduceMotion ? 0 : 0.55 },
+                y:       { type: "spring", stiffness: 120, damping: 18, delay: reduceMotion ? 0 : 0.55 },
+              }}
+              style={{
+                position:  "absolute",
+                bottom:    "12%",
+                left:      "50%",
+                transform: "translateX(-50%)",
+                zIndex:    5,
+              }}
+              className="sm:bottom-[14%]"
+            >
+              <SegmentedToggle activeTab={activeTab} onChange={setActiveTab} />
+            </motion.div>
           </>
         )}
       </AnimatePresence>
