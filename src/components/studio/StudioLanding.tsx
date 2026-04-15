@@ -62,14 +62,6 @@ function IconShare() {
   );
 }
 
-function IconPen() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-full w-full">
-      <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-    </svg>
-  );
-}
-
 // ─── AI icons ──────────────────────────────────────────────────────────────────
 
 function IconSparkles() {
@@ -127,13 +119,6 @@ function IconLayers() {
   );
 }
 
-function IconBolt() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-full w-full">
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-    </svg>
-  );
-}
 
 // ─── Tab data ──────────────────────────────────────────────────────────────────
 
@@ -147,7 +132,6 @@ const TABS = [
       { id: "slides",  icon: <IconSlides />  },
       { id: "diamond", icon: <IconDiamond /> },
       { id: "share",   icon: <IconShare />   },
-      { id: "pen",     icon: <IconPen />     },
     ],
   },
   {
@@ -159,7 +143,6 @@ const TABS = [
       { id: "wand",     icon: <IconWand />     },
       { id: "eye",      icon: <IconEye />      },
       { id: "layers",   icon: <IconLayers />   },
-      { id: "bolt",     icon: <IconBolt />     },
     ],
   },
 ] as const;
@@ -236,7 +219,7 @@ export default function StudioLanding() {
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0  }}
             transition={{ duration: 0.44, delay: 0.1, ease: "easeOut" }}
-            className="relative w-[92vw] max-w-[1040px]"
+            className="relative w-[92vw] max-w-[1160px]"
           >
             {/* Filter layer — in normal flow, sets height */}
             <div style={{ filter: "url(#studio-goo)" }}>
@@ -257,7 +240,7 @@ export default function StudioLanding() {
               </div>
 
               {/* Logo canvas */}
-              <div className="w-full overflow-hidden bg-[var(--folder-bg)] h-[300px] sm:h-[380px] md:h-[460px]">
+              <div className="w-full overflow-hidden bg-[var(--folder-bg)] h-[280px] sm:h-[340px] md:h-[400px]">
                 <AnimatePresence mode="popLayout">
                   <motion.div
                     key={activeIndex}
@@ -265,28 +248,25 @@ export default function StudioLanding() {
                     animate={{ opacity: 1, y: 0,  filter: "blur(0px)"  }}
                     exit={{    opacity: 0, y: -40, filter: "blur(10px)" }}
                     transition={{ duration: 0.24, ease: "easeOut" }}
-                    className="flex h-full items-center justify-center p-8 sm:p-12 md:p-16"
+                    className="flex h-full items-center justify-center px-8 sm:px-12 md:px-16"
                   >
-                    <div className="grid grid-cols-3 gap-6 sm:gap-8 md:gap-10">
+                    {/* 5 logos in a single row */}
+                    <div className="flex items-center justify-center gap-6 sm:gap-8 md:gap-12">
                       {activeTab.logos.map((logo, i) => (
                         <motion.div
                           key={logo.id}
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1   }}
-                          transition={{
-                            duration: 0.3,
-                            delay:    i * 0.05,
-                            ease:     "easeOut",
-                          }}
+                          transition={{ duration: 0.3, delay: i * 0.06, ease: "easeOut" }}
                           whileHover={{
                             scale:     1.14,
                             boxShadow: "0 10px 32px rgba(18,18,18,0.14)",
                           }}
                           whileTap={{ scale: 0.96 }}
-                          className="flex cursor-pointer items-center justify-center rounded-2xl border border-black/[0.07] bg-[var(--background)]/50 backdrop-blur-sm h-[60px] w-[60px] sm:h-[72px] sm:w-[72px] md:h-[84px] md:w-[84px]"
+                          className="flex cursor-pointer items-center justify-center rounded-2xl border border-black/[0.07] bg-[var(--background)]/50 backdrop-blur-sm h-[72px] w-[72px] sm:h-[88px] sm:w-[88px] md:h-[104px] md:w-[104px]"
                           style={{ transition: "box-shadow 0.2s ease" }}
                         >
-                          <div className="h-[26px] w-[26px] text-[var(--foreground)]/70 sm:h-[30px] sm:w-[30px] md:h-[34px] md:w-[34px]">
+                          <div className="h-[30px] w-[30px] text-[var(--foreground)]/70 sm:h-[36px] sm:w-[36px] md:h-[42px] md:w-[42px]">
                             {logo.icon}
                           </div>
                         </motion.div>
