@@ -318,7 +318,7 @@ export default function StudioLanding() {
                       whileTap={{ scale: 0.94 }}
                       onMouseEnter={() => setHoveredId(service.id as ServiceId)}
                       onMouseLeave={() => setHoveredId(null)}
-                      className="flex cursor-pointer items-center justify-center rounded-2xl border border-black/[0.07] bg-[var(--background)]/50 backdrop-blur-sm h-[64px] w-[64px] sm:h-[78px] sm:w-[78px] md:h-[92px] md:w-[92px]"
+                      className="flex cursor-pointer items-center justify-center rounded-2xl border border-black/[0.12] dark:border-white/20 bg-[var(--background)]/50 backdrop-blur-sm h-[64px] w-[64px] sm:h-[78px] sm:w-[78px] md:h-[92px] md:w-[92px]"
                     >
                       <div className="h-[26px] w-[26px] text-[var(--foreground)]/75 sm:h-[32px] sm:w-[32px] md:h-[38px] md:w-[38px]">
                         {service.icon}
