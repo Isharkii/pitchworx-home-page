@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type ThemeMode = "light" | "dark";
-type NavPanel = "about" | "login" | "pricing" | null;
+type NavPanel = "login" | "pricing" | null;
 
 const storageKey = "pitchworx-theme";
 
@@ -16,12 +16,6 @@ const panelCopy = {
     title: "Pricing placeholder",
     description:
       "Keep this slot for a compact pricing modal, package matrix, or booking flow.",
-  },
-  about: {
-    eyebrow: "About",
-    title: "PitchWorx",
-    description:
-      "Minimal motion systems, editorial pacing, and single-screen launches with clean first impressions.",
   },
   login: {
     eyebrow: "Login",
@@ -207,12 +201,12 @@ export function SiteNavbar() {
           >
             Contact
           </a>
-          <NavAction
-            onClick={() => togglePanel("about")}
-            ariaExpanded={activePanel === "about"}
+          <Link
+            href="/about"
+            className="font-ui text-[11px] uppercase tracking-[0.22em] text-black/56 transition-colors duration-200 hover:text-black/84"
           >
             About
-          </NavAction>
+          </Link>
           <NavAction
             onClick={() => togglePanel("login")}
             ariaExpanded={activePanel === "login"}
@@ -321,13 +315,13 @@ export function SiteNavbar() {
               >
                 Contact
               </a>
-              <button
-                type="button"
-                onClick={() => togglePanel("about")}
+              <Link
+                href="/about"
                 className="font-ui text-left text-[11px] uppercase tracking-[0.22em] text-black/62"
+                onClick={() => setMenuOpen(false)}
               >
                 About
-              </button>
+              </Link>
               <button
                 type="button"
                 onClick={() => togglePanel("login")}
