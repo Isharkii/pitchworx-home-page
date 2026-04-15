@@ -1,19 +1,5 @@
 "use client";
 
-/**
- * StudioLanding — gooey folder view
- *
- * Layout contract:
- *  - Outer shell carries pt offset = navbar height + breathing gap so
- *    nothing ever hides behind the fixed navbar (z-40).
- *  - Close (×) button sits at top-left of the safe zone, z-50, uses
- *    useRouter so pointer events are guaranteed.
- *  - Gooey folder: filter layer is in normal flow (sets height);
- *    tab labels are position:absolute on top — no fragile negative margins.
- *  - Content is centered in the remaining space, pulled slightly above
- *    dead-center with pb-[10%].
- */
-
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -83,23 +69,20 @@ export default function StudioLanding() {
       <GooeyFilter id="studio-goo" strength={screenSize.lessThan("md") ? 8 : 14} />
 
       {/*
-        ── Shell ──────────────────────────────────────────────────────────────
-        pt = navbar height + breathing gap:
-          mobile  (logo 55px + py-5×2 40px = 95px)  + 16px → 111px ≈ pt-28
-          sm      (logo 65px + 40px = 105px)          + 16px → 121px ≈ pt-[124px]
-          md+     (logo 80px + 40px = 120px)          + 20px → 140px ≈ pt-36
-
-        px = safe side margins:
-          mobile 16px / sm 24px / md 40px / lg 64px
+        Shell:
+          pt = navbar height + 24px gap
+            mobile  95px + 24 = 119px → pt-[120px]
+            sm     105px + 24 = 129px → pt-[130px]
+            md+    120px + 24 = 144px → pt-[144px]
+          px = safe side margins: 20px / 24px / 60px
       */}
-      <div className="relative flex h-full flex-col pt-28 sm:pt-[124px] md:pt-36 px-4 sm:px-6 md:px-10 lg:px-16">
+      <div className="relative flex h-full flex-col pt-[120px] sm:pt-[130px] md:pt-[144px] px-5 sm:px-6 md:px-[60px]">
 
-        {/* ── Close button ── below navbar, left-aligned, z-50 ─────────────── */}
+        {/* Close button — z-50, useRouter for reliable navigation */}
         <motion.div
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0   }}
-          transition={{ duration: 0.28, ease: "easeOut" }}
-          className="flex items-center"
+          transition={{ duration: 0.26, ease: "easeOut" }}
           style={{ position: "relative", zIndex: 50 }}
         >
           <button
@@ -123,113 +106,100 @@ export default function StudioLanding() {
           </button>
         </motion.div>
 
-        {/* ── Main content — centered, pulled slightly above dead-center ─────── */}
+        {/*
+          Primary content area.
+          items-center + pb-[10%] pulls the folder slightly above dead-center.
+          The folder is the only element here — no headings, no labels.
+        */}
         <div className="flex flex-1 items-center justify-center pb-[10%]">
-          <div className="w-full max-w-[560px] sm:max-w-[620px] md:max-w-[680px] space-y-6 sm:space-y-8">
+          <motion.div
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0  }}
+            transition={{ duration: 0.44, delay: 0.1, ease: "easeOut" }}
+            /* width: min(900px, 90vw) */
+            className="w-[90vw] max-w-[900px] relative"
+          >
 
-            {/* Heading block */}
-            <motion.div
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0  }}
-              transition={{ duration: 0.4, delay: 0.08, ease: "easeOut" }}
-              className="space-y-2"
-            >
-              <p className="font-ui text-[10px] uppercase tracking-[0.32em] text-[var(--muted)]">
-                Studio
-              </p>
-              <h1 className="font-display text-[2.2rem] leading-[0.9] tracking-[-0.03em] text-[var(--foreground)] sm:text-[2.6rem] md:text-[3rem]">
-                {paramTab === "ai" ? "AI Assisted" : "Custom Built"}
-              </h1>
-            </motion.div>
-
-            {/* ── Gooey folder ─────────────────────────────────────────────────
-                Structure:
-                  [relative wrapper]
-                    [filter div — normal flow, sets height]
-                      [tab background row]
-                      [content panel]
-                    [tab label row — absolute over tab backgrounds, no filter]
+            {/*
+              Gooey folder
+              ─────────────────────────────────────────────
+              Filter div is in normal flow → sets the outer height.
+              Tab labels sit position:absolute top-0 over it (no filter
+              on them so text stays perfectly sharp).
             */}
-            <motion.div
-              initial={{ opacity: 0, y: 22 }}
-              animate={{ opacity: 1, y: 0  }}
-              transition={{ duration: 0.42, delay: 0.18, ease: "easeOut" }}
-              className="relative"
-            >
-              {/* Filter layer — in normal flow so the outer div grows with it */}
-              <div style={{ filter: "url(#studio-goo)" }}>
 
-                {/* Tab background slots */}
-                <div className="flex w-full">
-                  {TABS.map((tab, index) => (
-                    <div key={tab.id} className="relative h-10 flex-1 sm:h-12">
-                      {activeIndex === index && (
-                        <motion.div
-                          layoutId="folder-tab-bg"
-                          className="absolute inset-0 bg-[var(--surface-soft)]"
-                          transition={{ type: "spring", bounce: 0, duration: 0.36 }}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
+            {/* Filter layer */}
+            <div style={{ filter: "url(#studio-goo)" }}>
 
-                {/* Content panel */}
-                <div className="h-[200px] w-full overflow-hidden bg-[var(--surface-soft)] sm:h-[240px] md:h-[260px]">
-                  <AnimatePresence mode="popLayout">
-                    <motion.div
-                      key={activeIndex}
-                      initial={{ opacity: 0, y: 36,  filter: "blur(8px)"  }}
-                      animate={{ opacity: 1, y: 0,   filter: "blur(0px)"  }}
-                      exit={{    opacity: 0, y: -36,  filter: "blur(8px)"  }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="px-5 pt-5 pb-4 sm:px-7 sm:pt-6"
-                    >
-                      <ul>
-                        {activeTab.files.map((file) => (
-                          <li
-                            key={file.name}
-                            className="flex items-center justify-between border-b border-[var(--line)] py-2.5"
-                          >
-                            <span className="font-ui text-[13px] text-[var(--foreground)] sm:text-[14px]">
-                              {file.name}
-                            </span>
-                            <span className="font-ui text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">
-                              {file.meta}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              {/* Tab label row — absolute at top of wrapper, above filter layer.
-                  Text is never filtered so it stays crisp at all times. */}
-              <div className="absolute left-0 right-0 top-0 z-10 flex h-10 sm:h-12">
+              {/* Tab background row */}
+              <div className="flex w-full">
                 {TABS.map((tab, index) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveIndex(index)}
-                    className="flex flex-1 cursor-pointer items-center justify-center"
-                  >
-                    <span
-                      className={`font-ui text-[11px] uppercase tracking-[0.2em] transition-colors duration-200 sm:text-[12px] ${
-                        activeIndex === index
-                          ? "text-[var(--foreground)]"
-                          : "text-[var(--muted)]"
-                      }`}
-                    >
-                      {tab.label}
-                    </span>
-                  </button>
+                  <div key={tab.id} className="relative h-12 flex-1 sm:h-14 md:h-16">
+                    {activeIndex === index && (
+                      <motion.div
+                        layoutId="folder-tab-bg"
+                        className="absolute inset-0 bg-[var(--surface-soft)]"
+                        transition={{ type: "spring", bounce: 0, duration: 0.36 }}
+                      />
+                    )}
+                  </div>
                 ))}
               </div>
-            </motion.div>
 
-          </div>
+              {/* Content panel */}
+              <div className="w-full overflow-hidden bg-[var(--surface-soft)] h-[260px] sm:h-[300px] md:h-[360px]">
+                <AnimatePresence mode="popLayout">
+                  <motion.div
+                    key={activeIndex}
+                    initial={{ opacity: 0, y: 40, filter: "blur(8px)"  }}
+                    animate={{ opacity: 1, y: 0,  filter: "blur(0px)"  }}
+                    exit={{    opacity: 0, y: -40, filter: "blur(8px)"  }}
+                    transition={{ duration: 0.22, ease: "easeOut" }}
+                    className="px-8 pt-8 pb-6 sm:px-10 sm:pt-9 md:px-14 md:pt-11"
+                  >
+                    <ul>
+                      {activeTab.files.map((file) => (
+                        <li
+                          key={file.name}
+                          className="flex items-center justify-between border-b border-[var(--line)] py-3.5 sm:py-4 md:py-5"
+                        >
+                          <span className="font-ui text-[14px] text-[var(--foreground)] sm:text-[16px] md:text-[18px]">
+                            {file.name}
+                          </span>
+                          <span className="font-ui text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] sm:text-[11px] md:text-[12px]">
+                            {file.meta}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* Tab labels — absolute, above filter, text always sharp */}
+            <div className="absolute left-0 right-0 top-0 z-10 flex h-12 sm:h-14 md:h-16">
+              {TABS.map((tab, index) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveIndex(index)}
+                  className="flex flex-1 cursor-pointer items-center justify-center"
+                >
+                  <span
+                    className={`font-ui text-[12px] uppercase tracking-[0.22em] transition-colors duration-200 sm:text-[13px] md:text-[14px] ${
+                      activeIndex === index
+                        ? "text-[var(--foreground)]"
+                        : "text-[var(--muted)]"
+                    }`}
+                  >
+                    {tab.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+          </motion.div>
         </div>
       </div>
     </AuroraBackground>
