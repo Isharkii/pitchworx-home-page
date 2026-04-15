@@ -20,6 +20,12 @@
 .DS_Store
 *.pem
 
+# ai / tooling
+.claude/
+.codex/
+CLAUDE.md
+AI_CONTEXT.md
+
 # debug
 npm-debug.log*
 yarn-debug.log*

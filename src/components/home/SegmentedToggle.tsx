@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 export type ToggleTab = "Custom" | "AI";
 
@@ -12,6 +13,13 @@ type SegmentedToggleProps = {
 const TABS: ToggleTab[] = ["Custom", "AI"];
 
 export function SegmentedToggle({ activeTab, onChange }: SegmentedToggleProps) {
+  const router = useRouter();
+
+  function handleClick(tab: ToggleTab) {
+    onChange(tab);
+    router.push(`/studio?tab=${tab.toLowerCase()}`);
+  }
+
   return (
     <motion.div
       whileHover={{ scale: 1.03 }}
@@ -24,7 +32,7 @@ export function SegmentedToggle({ activeTab, onChange }: SegmentedToggleProps) {
           <button
             key={tab}
             type="button"
-            onClick={() => onChange(tab)}
+            onClick={() => handleClick(tab)}
             className="relative min-h-[34px] min-w-[72px] rounded-full px-5 py-[10px] text-[13px] font-medium leading-none"
           >
             {/* Sliding active pill */}
