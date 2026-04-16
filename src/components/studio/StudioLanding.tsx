@@ -2,10 +2,9 @@
 
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
-import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { AuroraBackground } from "@/components/ui/aurora-background";
 import { GooeyFilter } from "@/components/ui/gooey-filter";
 import { useScreenSize } from "@/hooks/use-screen-size";
 
@@ -767,8 +766,14 @@ export default function StudioLanding() {
   const [presentationMode, setPresentationMode] = useState(false);
   const [gammaResult,      setGammaResult]      = useState<GammaResult | null>(null);
   const [isGenerating,     setIsGenerating]     = useState(false);
-  const [, startLayoutTransition] = useTransition();
+  const layoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Read presentationMode in callbacks without adding it to useCallback deps
+  const presentationModeRef = useRef(presentationMode);
+  presentationModeRef.current = presentationMode;
   const screenSize = useScreenSize();
+
+  // Clean up any pending layout timer on unmount
+  useEffect(() => () => { if (layoutTimerRef.current) clearTimeout(layoutTimerRef.current); }, []);
 
   const activeTabId = TABS[activeIndex].id;
   const activeLogos = activeTabId === "ai" ? AI_SERVICES : SERVICES;
@@ -802,17 +807,20 @@ export default function StudioLanding() {
   const openPresentationTab = useCallback((id: string) => {
     setSlideDir(1);
     setActivePresentationTab(id);
-    startLayoutTransition(() => {
-      setPresentationMode(true);
-    });
-  }, [startLayoutTransition]);
+    // Only expand layout when not already in presentation mode.
+    // Delay until after the slide spring settles (~300ms) so the height
+    // layout change never competes with the slide animation.
+    if (!presentationModeRef.current) {
+      if (layoutTimerRef.current) clearTimeout(layoutTimerRef.current);
+      layoutTimerRef.current = setTimeout(() => setPresentationMode(true), 350);
+    }
+  }, []);
 
   return (
-    <AuroraBackground
-      showRadialGradient
-      className={`w-screen !bg-[var(--background)] text-[var(--foreground)] ${
+    <div
+      className={`relative w-screen bg-[var(--background)] text-[var(--foreground)] ${
         presentationMode
-          ? "!h-auto min-h-[100dvh] overflow-y-auto overflow-x-hidden"
+          ? "min-h-[100dvh] overflow-y-auto overflow-x-hidden"
           : "h-[100dvh] overflow-hidden"
       }`}
     >
@@ -870,7 +878,7 @@ export default function StudioLanding() {
                 : "h-[clamp(17rem,52vh,34rem)]"
             }`}
           >
-            <AnimatePresence custom={slideDir} mode="wait" initial={false}>
+            <AnimatePresence custom={slideDir} mode="sync" initial={false}>
 
               {/* ── MAIN VIEW ── */}
               {selectedService === null && (
@@ -1268,6 +1276,6 @@ export default function StudioLanding() {
           )}
         </div>
       </div>
-    </AuroraBackground>
+    </div>
   );
 }
