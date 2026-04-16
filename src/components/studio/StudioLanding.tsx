@@ -460,7 +460,7 @@ const GenerateChatbox = memo(function GenerateChatbox({ onGenerated, onGeneratin
         placeholder="Describe your presentation… (e.g. 'Series A pitch deck for a B2B SaaS analytics startup')"
         rows={5}
         disabled={isLoading}
-        className="font-ui w-full resize-none rounded-xl border border-[var(--line)] bg-[var(--background)]/70 px-4 py-3.5 text-[13px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)]/45 backdrop-blur-sm transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/25 min-h-[120px] sm:text-[14px] disabled:opacity-50"
+        className="font-ui w-full resize-none rounded-xl border border-[var(--line)] bg-[var(--background)]/90 px-4 py-3.5 text-[13px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)]/45 transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/25 min-h-[120px] sm:text-[14px] disabled:opacity-50"
       />
 
       {/* Error */}
@@ -502,7 +502,7 @@ const GenerateChatbox = memo(function GenerateChatbox({ onGenerated, onGeneratin
           onClick={() => fileInputRef.current?.click()}
           aria-label="Attach files"
           disabled={isLoading}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--background)]/60 text-[var(--muted)] backdrop-blur-sm transition-colors hover:border-blue-400/40 hover:text-[var(--foreground)] disabled:opacity-40"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--background)]/80 text-[var(--muted)] transition-colors hover:border-blue-400/40 hover:text-[var(--foreground)] disabled:opacity-40"
         >
           <svg viewBox="0 0 16 16" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
             <line x1="8" y1="2" x2="8" y2="14" />
@@ -892,6 +892,7 @@ export default function StudioLanding() {
                   animate="center"
                   exit="exit"
                   className="absolute inset-0"
+                  style={{ willChange: "transform" }}
                 >
                   {/* Gooey filter — background colour blocks only, never receives pointer events */}
                   <div style={{ filter: "url(#studio-goo)", pointerEvents: "none" }} className="flex h-full flex-col">
@@ -1015,6 +1016,7 @@ export default function StudioLanding() {
                   animate="center"
                   exit="exit"
                   className="absolute inset-0"
+                  style={{ willChange: "transform" }}
                 >
                   {/* Gooey filter layer — background colour blocks only, never receives pointer events */}
                   <div style={{ filter: "url(#studio-goo)", pointerEvents: "none" }} className="flex h-full flex-col">
@@ -1108,6 +1110,7 @@ export default function StudioLanding() {
                   animate="center"
                   exit="exit"
                   className="absolute inset-0"
+                  style={{ willChange: "transform" }}
                 >
                   {/* Gooey filter layer */}
                   <div style={{ filter: "url(#studio-goo)", pointerEvents: "none" }} className="flex h-full flex-col">
@@ -1155,7 +1158,7 @@ export default function StudioLanding() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{    opacity: 0, y: -8 }}
-                        transition={{ duration: 0.18, ease: "easeOut" }}
+                        transition={{ duration: 0.18, ease: "easeOut", delay: 0.22 }}
                       >
                         {activePresentationTab === "generate" && (
                           <GenerateChatbox
