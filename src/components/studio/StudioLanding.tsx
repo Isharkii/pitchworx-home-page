@@ -173,15 +173,172 @@ function AIPresentationCards({ onSelect }: { onSelect: (id: string) => void }) {
 
 // ─── Generate chatbox ──────────────────────────────────────────────────────────
 
-const THEMES = [
-  { value: "default",    label: "Default"    },
-  { value: "modern",     label: "Modern"     },
-  { value: "minimalist", label: "Minimalist" },
-  { value: "corporate",  label: "Corporate"  },
-  { value: "creative",   label: "Creative"   },
-  { value: "dark",       label: "Dark"       },
-  { value: "light",      label: "Light"      },
+// ─── ThemePicker ───────────────────────────────────────────────────────────────
+
+interface PaletteTheme {
+  id: string;
+  name: string;
+  type: "dark" | "light";
+  colorKeywords: string[];
+  toneKeywords: string[];
+  colors: [string, string, string];
+}
+
+const PALETTE_THEMES: PaletteTheme[] = [
+  { id: "midnight",   name: "Midnight",    type: "dark",  colorKeywords: ["navy","steel","electric"],   toneKeywords: ["professional","bold"],      colors: ["#0f172a","#1e3a5f","#3b82f6"] },
+  { id: "aurora",     name: "Aurora",      type: "dark",  colorKeywords: ["violet","indigo","lavender"], toneKeywords: ["creative","dreamy"],        colors: ["#4c1d95","#6d28d9","#a78bfa"] },
+  { id: "slate",      name: "Slate",       type: "light", colorKeywords: ["gray","cool","silver"],       toneKeywords: ["minimal","clean"],          colors: ["#f8fafc","#94a3b8","#334155"] },
+  { id: "ocean",      name: "Ocean",       type: "dark",  colorKeywords: ["teal","cyan","deep-blue"],    toneKeywords: ["calm","trustworthy"],       colors: ["#0c4a6e","#0369a1","#38bdf8"] },
+  { id: "forest",     name: "Forest",      type: "dark",  colorKeywords: ["green","sage","earth"],       toneKeywords: ["natural","grounded"],       colors: ["#14532d","#166534","#4ade80"] },
+  { id: "ember",      name: "Ember",       type: "dark",  colorKeywords: ["orange","amber","fire"],      toneKeywords: ["energetic","warm"],         colors: ["#431407","#9a3412","#fb923c"] },
+  { id: "rose",       name: "Rose",        type: "light", colorKeywords: ["pink","blush","soft-red"],    toneKeywords: ["friendly","approachable"],  colors: ["#fff1f2","#fda4af","#e11d48"] },
+  { id: "monochrome", name: "Monochrome",  type: "light", colorKeywords: ["black","white","gray"],       toneKeywords: ["editorial","stark"],        colors: ["#ffffff","#737373","#000000"] },
+  { id: "sapphire",   name: "Sapphire",    type: "dark",  colorKeywords: ["blue","cobalt","royal"],      toneKeywords: ["corporate","authoritative"],colors: ["#1e1b4b","#3730a3","#818cf8"] },
+  { id: "gold",       name: "Gold",        type: "light", colorKeywords: ["gold","amber","cream"],       toneKeywords: ["luxury","premium"],         colors: ["#fffbeb","#fcd34d","#92400e"] },
+  { id: "lavender",   name: "Lavender",    type: "light", colorKeywords: ["purple","lilac","soft"],      toneKeywords: ["elegant","feminine"],       colors: ["#f5f3ff","#c4b5fd","#7c3aed"] },
+  { id: "crimson",    name: "Crimson",     type: "dark",  colorKeywords: ["red","burgundy","deep"],      toneKeywords: ["bold","powerful"],          colors: ["#450a0a","#991b1b","#f87171"] },
+  { id: "arctic",     name: "Arctic",      type: "light", colorKeywords: ["ice","pale-blue","white"],    toneKeywords: ["fresh","airy"],             colors: ["#f0f9ff","#7dd3fc","#0ea5e9"] },
+  { id: "obsidian",   name: "Obsidian",    type: "dark",  colorKeywords: ["black","charcoal","carbon"],  toneKeywords: ["sleek","modern"],           colors: ["#09090b","#27272a","#71717a"] },
+  { id: "mint",       name: "Mint",        type: "light", colorKeywords: ["green","mint","fresh"],       toneKeywords: ["healthy","optimistic"],     colors: ["#f0fdf4","#86efac","#16a34a"] },
+  { id: "dusk",       name: "Dusk",        type: "dark",  colorKeywords: ["purple","pink","gradient"],   toneKeywords: ["artistic","vibrant"],       colors: ["#2d1b69","#7c3aed","#f472b6"] },
 ];
+
+const dropdownVariants: Variants = {
+  hidden:  { opacity: 0, y: 6, scale: 0.97 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.15, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] } },
+  exit:    { opacity: 0, y: 4, scale: 0.97, transition: { duration: 0.1 } },
+};
+
+interface ThemePickerProps {
+  value: string;
+  onChange: (id: string) => void;
+  disabled?: boolean;
+}
+
+function ThemePicker({ value, onChange, disabled }: ThemePickerProps) {
+  const [open, setOpen] = useState(false);
+  const selected = PALETTE_THEMES.find((t) => t.id === value) ?? null;
+
+  return (
+    <div className="relative">
+      {/* Invisible outside-click overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40"
+          aria-hidden
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* Trigger */}
+      <motion.button
+        type="button"
+        whileTap={{ scale: 0.95 }}
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Pick a theme"
+        className={`relative z-50 flex h-8 items-center gap-1.5 rounded-lg border px-2 transition-colors duration-150 disabled:opacity-40 ${
+          open
+            ? "border-violet-300 bg-violet-50/60 text-violet-600 dark:border-violet-600/50 dark:bg-violet-950/30 dark:text-violet-400"
+            : "border-black/[0.08] bg-[var(--background)]/60 text-gray-400 hover:border-violet-300 hover:text-violet-600 dark:border-white/[0.08] dark:text-white/30 dark:hover:border-violet-500/60 dark:hover:text-violet-400"
+        }`}
+      >
+        {selected ? (
+          <>
+            {/* 3 color swatches */}
+            <span className="flex items-center gap-[2px]">
+              {selected.colors.map((hex, i) => (
+                <span
+                  key={i}
+                  className="inline-block h-3 w-3 rounded-[2px]"
+                  style={{ background: hex }}
+                />
+              ))}
+            </span>
+            {/* Clear × */}
+            <span
+              role="button"
+              aria-label="Clear theme"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); onChange(""); } }}
+              onClick={(e) => { e.stopPropagation(); onChange(""); }}
+              className="ml-0.5 text-[11px] leading-none text-gray-400 hover:text-gray-600 dark:text-white/30 dark:hover:text-white/60"
+            >
+              ×
+            </span>
+          </>
+        ) : (
+          /* Palette SVG */
+          <svg viewBox="0 0 18 18" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 1.5A7.5 7.5 0 1 0 16.5 9a2.5 2.5 0 0 1-2.5-2.5A2.5 2.5 0 0 0 11.5 4" />
+            <circle cx="5.5" cy="7" r="1" fill="currentColor" stroke="none" />
+            <circle cx="5.5" cy="11" r="1" fill="currentColor" stroke="none" />
+            <circle cx="9"   cy="13" r="1" fill="currentColor" stroke="none" />
+          </svg>
+        )}
+      </motion.button>
+
+      {/* Dropdown */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="theme-dropdown"
+            variants={dropdownVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="absolute bottom-full left-0 z-50 mb-2 w-80 overflow-hidden rounded-2xl border border-black/[0.08] bg-white shadow-xl dark:border-white/[0.08] dark:bg-[#111] dark:shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
+          >
+            <div className="max-h-96 overflow-y-auto p-1">
+              <div className="grid grid-cols-2 gap-1.5 p-1">
+                {PALETTE_THEMES.map((t) => {
+                  const isSelected = value === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => { onChange(t.id); setOpen(false); }}
+                      className={`w-full rounded-xl border p-3 text-left transition-colors duration-100 ${
+                        isSelected
+                          ? "border-violet-400 bg-violet-50 dark:border-violet-500 dark:bg-violet-500/10"
+                          : "border-transparent hover:border-black/[0.07] hover:bg-gray-50 dark:hover:border-white/[0.06] dark:hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      {/* Color bar — 3 equal strips */}
+                      <div className="mb-2 flex h-8 w-full overflow-hidden rounded-md">
+                        {t.colors.map((hex, i) => (
+                          <span key={i} className="flex-1" style={{ background: hex }} />
+                        ))}
+                      </div>
+                      <p
+                        className="text-xs font-medium text-gray-700 dark:text-white/70"
+                        style={{ fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
+                      >
+                        {t.name}
+                      </p>
+                      <p className="mt-0.5 text-[9px] text-gray-400 dark:text-white/25">
+                        {t.colorKeywords.join(" · ")} · {t.toneKeywords.join(" · ")}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export interface GammaSlide {
+  id: string;
+  title: string;
+  body: string;
+  speakerNotes?: string;
+  imageUrl?: string;
+  layout?: string;
+}
 
 function IconFile() {
   return (
@@ -192,11 +349,47 @@ function IconFile() {
   );
 }
 
-function GenerateChatbox() {
+interface GenerateChatboxProps {
+  onSlidesGenerated: (slides: GammaSlide[], title: string, url: string) => void;
+  onGeneratingChange: (loading: boolean) => void;
+}
+
+function GenerateChatbox({ onSlidesGenerated, onGeneratingChange }: GenerateChatboxProps) {
   const [prompt, setPrompt]     = useState("");
   const [files, setFiles]       = useState<File[]>([]);
   const [theme, setTheme]       = useState("default");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError]       = useState<string | null>(null);
   const fileInputRef            = useRef<HTMLInputElement>(null);
+
+  async function handleGenerate() {
+    if (!prompt.trim() || isLoading) return;
+    setError(null);
+    setIsLoading(true);
+    onGeneratingChange(true);
+
+    try {
+      const res = await fetch("/api/gamma/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prompt.trim(), theme }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data?.error ?? "Generation failed. Please try again.");
+        return;
+      }
+
+      onSlidesGenerated(data.slides ?? [], data.title ?? prompt, data.presentationUrl ?? "");
+    } catch {
+      setError("Network error. Please check your connection and try again.");
+    } finally {
+      setIsLoading(false);
+      onGeneratingChange(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4 p-5 sm:p-6 md:p-8">
@@ -205,10 +398,21 @@ function GenerateChatbox() {
       <textarea
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
-        placeholder="Describe your presentation…"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerate();
+        }}
+        placeholder="Describe your presentation… (e.g. 'Series A pitch deck for a B2B SaaS analytics startup')"
         rows={5}
-        className="font-ui w-full resize-none rounded-xl border border-[var(--line)] bg-[var(--background)]/70 px-4 py-3.5 text-[13px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)]/45 backdrop-blur-sm transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/25 min-h-[120px] sm:text-[14px]"
+        disabled={isLoading}
+        className="font-ui w-full resize-none rounded-xl border border-[var(--line)] bg-[var(--background)]/70 px-4 py-3.5 text-[13px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)]/45 backdrop-blur-sm transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/25 min-h-[120px] sm:text-[14px] disabled:opacity-50"
       />
+
+      {/* Error */}
+      {error && (
+        <p className="font-ui rounded-lg border border-red-200/60 bg-red-50/60 px-3.5 py-2.5 text-[11px] text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400 sm:text-[12px]">
+          {error}
+        </p>
+      )}
 
       {/* Attached file chips */}
       {files.length > 0 && (
@@ -241,7 +445,8 @@ function GenerateChatbox() {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           aria-label="Attach files"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--background)]/60 text-[var(--muted)] backdrop-blur-sm transition-colors hover:border-blue-400/40 hover:text-[var(--foreground)]"
+          disabled={isLoading}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--background)]/60 text-[var(--muted)] backdrop-blur-sm transition-colors hover:border-blue-400/40 hover:text-[var(--foreground)] disabled:opacity-40"
         >
           <svg viewBox="0 0 16 16" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
             <line x1="8" y1="2" x2="8" y2="14" />
@@ -259,35 +464,127 @@ function GenerateChatbox() {
           }}
         />
 
-        {/* Theme selector */}
-        <div className="relative">
-          <select
-            value={theme}
-            onChange={(e) => setTheme(e.target.value)}
-            className="font-ui appearance-none rounded-xl border border-[var(--line)] bg-[var(--background)]/60 py-1.5 pl-3 pr-7 text-[11px] text-[var(--foreground)] backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400/25 sm:text-[12px]"
-          >
-            {THEMES.map((t) => (
-              <option key={t.value} value={t.value}>
-                Theme: {t.label}
-              </option>
-            ))}
-          </select>
-          <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)]/60">
-            <svg viewBox="0 0 10 6" className="h-2 w-2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-              <path d="M1 1l4 4 4-4" />
-            </svg>
-          </div>
-        </div>
+        {/* Theme picker */}
+        <ThemePicker value={theme} onChange={setTheme} disabled={isLoading} />
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Hint */}
+        {!isLoading && (
+          <span className="font-ui hidden text-[10px] text-[var(--muted)]/40 sm:block">
+            ⌘↵ to generate
+          </span>
+        )}
 
         {/* Generate */}
         <button
           type="button"
-          className="font-ui shrink-0 rounded-xl bg-blue-500 px-5 py-2 text-[12px] font-medium text-white transition-colors duration-200 hover:bg-emerald-500 sm:px-6 sm:text-[13px]"
+          onClick={handleGenerate}
+          disabled={isLoading || !prompt.trim()}
+          className="font-ui shrink-0 inline-flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2 text-[12px] font-medium text-white transition-colors duration-200 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:text-[13px]"
         >
-          Generate
+          {isLoading ? (
+            <>
+              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="32" strokeDashoffset="12" strokeLinecap="round" />
+              </svg>
+              Generating…
+            </>
+          ) : "Generate"}
         </button>
       </div>
     </div>
+  );
+}
+
+// ─── Slide card ────────────────────────────────────────────────────────────────
+
+const slideCardVariants: Variants = {
+  hidden:  { opacity: 0, y: 24, scale: 0.97 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { delay: i * 0.06, duration: 0.38, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+  }),
+};
+
+function SlideCard({ slide, index }: { slide: GammaSlide; index: number }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const bodyLines = slide.body.split("\n\n").filter(Boolean);
+  const previewLines = bodyLines.slice(0, 3);
+  const hasMore = bodyLines.length > 3;
+
+  return (
+    <motion.div
+      custom={index}
+      variants={slideCardVariants}
+      initial="hidden"
+      animate="visible"
+      style={{ willChange: "transform" }}
+      className="group relative overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--background)]/80 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.07)] transition-shadow duration-300 hover:shadow-[0_10px_36px_rgba(0,0,0,0.13)]"
+    >
+      {/* Slide number badge */}
+      <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--background)]/60 backdrop-blur-sm">
+        <span className="font-ui text-[9px] font-semibold tracking-wide text-[var(--muted)]">
+          {index + 1}
+        </span>
+      </div>
+
+      {/* Cover image */}
+      {slide.imageUrl && (
+        <div className="h-32 w-full overflow-hidden sm:h-36">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={slide.imageUrl}
+            alt={slide.title}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="p-4 sm:p-5">
+        <h3 className="font-display text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[var(--foreground)] sm:text-[16px] mb-2.5">
+          {slide.title}
+        </h3>
+
+        {bodyLines.length > 0 && (
+          <div className="space-y-2">
+            {(expanded ? bodyLines : previewLines).map((line, i) => (
+              <p
+                key={i}
+                className="font-ui text-[12px] leading-relaxed text-[var(--muted)] sm:text-[13px]"
+              >
+                {line}
+              </p>
+            ))}
+            {hasMore && (
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="font-ui mt-1 text-[11px] text-blue-500 hover:text-blue-600 transition-colors"
+              >
+                {expanded ? "Show less" : `+${bodyLines.length - 3} more lines`}
+              </button>
+            )}
+          </div>
+        )}
+
+        {slide.speakerNotes && (
+          <details className="mt-3">
+            <summary className="font-ui cursor-pointer text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]/50 hover:text-[var(--muted)] transition-colors">
+              Speaker notes
+            </summary>
+            <p className="font-ui mt-2 rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] px-3 py-2.5 text-[11px] leading-relaxed text-[var(--muted)]/80 italic sm:text-[12px]">
+              {slide.speakerNotes}
+            </p>
+          </details>
+        )}
+      </div>
+    </motion.div>
   );
 }
 
@@ -496,6 +793,10 @@ export default function StudioLanding() {
   const [activeDetailTab, setActiveDetailTab] = useState<ServiceId>("website");
   const [slideDir,       setSlideDir]       = useState<1 | -1>(1);
   const [activePresentationTab, setActivePresentationTab] = useState<string | null>(null);
+  const [generatedSlides,  setGeneratedSlides]  = useState<GammaSlide[]>([]);
+  const [presentationTitle, setPresentationTitle] = useState<string>("");
+  const [presentationUrl,   setPresentationUrl]   = useState<string>("");
+  const [isGenerating,     setIsGenerating]     = useState(false);
   const screenSize = useScreenSize();
 
   const activeTabId = TABS[activeIndex].id;
@@ -516,9 +817,17 @@ export default function StudioLanding() {
 
   // X button: close sub-view → detail → main → home
   function handleClose() {
-    if (activePresentationTab) { setSlideDir(-1); setActivePresentationTab(null); }
-    else if (selectedService) closeDetail();
-    else router.push("/");
+    if (activePresentationTab) {
+      setSlideDir(-1);
+      setActivePresentationTab(null);
+      setGeneratedSlides([]);
+      setPresentationTitle("");
+      setPresentationUrl("");
+    } else if (selectedService) {
+      closeDetail();
+    } else {
+      router.push("/");
+    }
   }
 
   return (
@@ -856,7 +1165,16 @@ export default function StudioLanding() {
                         exit={{    opacity: 0, y: -8 }}
                         transition={{ duration: 0.18, ease: "easeOut" }}
                       >
-                        {activePresentationTab === "generate" && <GenerateChatbox />}
+                        {activePresentationTab === "generate" && (
+                          <GenerateChatbox
+                            onSlidesGenerated={(slides, title, url) => {
+                              setGeneratedSlides(slides);
+                              setPresentationTitle(title);
+                              setPresentationUrl(url);
+                            }}
+                            onGeneratingChange={setIsGenerating}
+                          />
+                        )}
                       </motion.div>
                     </AnimatePresence>
                   </div>
@@ -866,10 +1184,84 @@ export default function StudioLanding() {
             </AnimatePresence>
           </motion.div>
 
-          {/* Generated slides — rendered below the folder, dynamically grows */}
+          {/* Generated slides — rendered below the folder */}
           {activePresentationTab !== null && (
             <div className="w-full max-w-[1160px]">
-              {/* Slide previews will be injected here by the API integration */}
+              <AnimatePresence mode="wait">
+
+                {/* Loading skeleton */}
+                {isGenerating && (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  >
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="animate-pulse rounded-2xl border border-[var(--line)] bg-[var(--background)]/60 p-5"
+                        style={{ animationDelay: `${i * 80}ms` }}
+                      >
+                        <div className="mb-3 h-4 w-2/3 rounded-lg bg-[var(--muted)]/15" />
+                        <div className="space-y-2">
+                          <div className="h-3 w-full rounded bg-[var(--muted)]/10" />
+                          <div className="h-3 w-4/5 rounded bg-[var(--muted)]/10" />
+                          <div className="h-3 w-3/5 rounded bg-[var(--muted)]/10" />
+                        </div>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+
+                {/* Slides */}
+                {!isGenerating && generatedSlides.length > 0 && (
+                  <motion.div
+                    key="slides"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {/* Header */}
+                    <div className="mb-5 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="font-ui text-[10px] uppercase tracking-[0.22em] text-[var(--muted)]/50 mb-0.5">
+                          {generatedSlides.length} slides
+                        </p>
+                        {presentationTitle && (
+                          <h2 className="font-display text-[18px] font-semibold leading-snug text-[var(--foreground)] sm:text-[20px]">
+                            {presentationTitle}
+                          </h2>
+                        )}
+                      </div>
+                      {presentationUrl && (
+                        <a
+                          href={presentationUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-ui shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--background)]/60 px-4 py-2 text-[11px] text-[var(--foreground)] backdrop-blur-sm transition-colors hover:bg-[var(--background)] sm:text-[12px]"
+                        >
+                          Open in Gamma
+                          <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2 10L10 2M10 2H5M10 2v5" />
+                          </svg>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Grid */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {generatedSlides.map((slide, i) => (
+                        <SlideCard key={slide.id} slide={slide} index={i} />
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+              </AnimatePresence>
             </div>
           )}
         </div>
