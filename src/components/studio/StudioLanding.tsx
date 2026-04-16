@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 
 import { AuroraBackground } from "@/components/ui/aurora-background";
@@ -133,7 +133,7 @@ const presentationListVariants = {
   visible: { transition: { staggerChildren: 0.07, delayChildren: 0.06 } },
 };
 
-function AIPresentationCards({ onSelect }: { onSelect: (id: string) => void }) {
+const AIPresentationCards = memo(function AIPresentationCards({ onSelect }: { onSelect: (id: string) => void }) {
   return (
     <motion.div
       variants={presentationListVariants}
@@ -170,7 +170,7 @@ function AIPresentationCards({ onSelect }: { onSelect: (id: string) => void }) {
       ))}
     </motion.div>
   );
-}
+});
 
 // ─── Generate chatbox ──────────────────────────────────────────────────────────
 
@@ -237,14 +237,16 @@ interface ThemePickerProps {
   disabled?: boolean;
 }
 
-function ThemePicker({ value, onChange, disabled }: ThemePickerProps) {
+const ThemePicker = memo(function ThemePicker({ value, onChange, disabled }: ThemePickerProps) {
   const [open, setOpen]           = useState(false);
   const [pos, setPos]             = useState({ bottom: 0, left: 0, maxH: 320 });
-  const [mounted, setMounted]     = useState(false);
+  // Initialise to true on the client immediately — avoids the extra
+  // useEffect render that previously fired mid-slide-transition.
+  const [mounted, setMounted]     = useState(() => typeof window !== "undefined");
   const [themes, setThemes]       = useState<GammaTheme[]>([]);
   const [loadingThemes, setLoadingThemes] = useState(false);
   const triggerRef                = useRef<HTMLButtonElement>(null);
-  const selected                  = themes.find((t) => t.id === value) ?? null;
+  const selected                  = useMemo(() => themes.find((t) => t.id === value) ?? null, [themes, value]);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -383,7 +385,7 @@ function ThemePicker({ value, onChange, disabled }: ThemePickerProps) {
       {mounted && createPortal(dropdown, document.body)}
     </div>
   );
-}
+});
 
 function IconFile() {
   return (
@@ -408,7 +410,7 @@ interface GenerateChatboxProps {
   onGeneratingChange: (loading: boolean) => void;
 }
 
-function GenerateChatbox({ onGenerated, onGeneratingChange }: GenerateChatboxProps) {
+const GenerateChatbox = memo(function GenerateChatbox({ onGenerated, onGeneratingChange }: GenerateChatboxProps) {
   const [prompt, setPrompt]     = useState("");
   const [files, setFiles]       = useState<File[]>([]);
   const [theme, setTheme]       = useState("");
@@ -550,7 +552,7 @@ function GenerateChatbox({ onGenerated, onGeneratingChange }: GenerateChatboxPro
       </div>
     </div>
   );
-}
+});
 
 // ─── Slide card ────────────────────────────────────────────────────────────────
 
@@ -772,43 +774,38 @@ export default function StudioLanding() {
   const activeLogos = activeTabId === "ai" ? AI_SERVICES : SERVICES;
   const hoverContent = hoveredId ? CONTENT[activeTabId][hoveredId] : null;
 
-  function openDetail(service: ServiceId) {
+  const openDetail = useCallback((service: ServiceId) => {
     setSlideDir(1);
     setActiveDetailTab(service);
     setHoveredId(null);
     setSelectedService(service);
-  }
-
-  function closeDetail() {
-    setSlideDir(-1);
-    setSelectedService(null);
-  }
+  }, []);
 
   // X button: close sub-view → detail → main → home
-  function handleClose() {
+  const handleClose = useCallback(() => {
     if (activePresentationTab) {
       setSlideDir(-1);
-      // Collapse layout immediately so the folder shrinks as the slide exits
       setPresentationMode(false);
       setActivePresentationTab(null);
       setGammaResult(null);
     } else if (selectedService) {
-      closeDetail();
+      setSlideDir(-1);
+      setSelectedService(null);
     } else {
       router.push("/");
     }
-  }
+  }, [activePresentationTab, selectedService, router]);
 
   // Open a presentation sub-tab: start the slide animation immediately,
   // defer the heavy layout expansion (outer container + folder height) so it
   // doesn't block the first animation frame.
-  function openPresentationTab(id: string) {
+  const openPresentationTab = useCallback((id: string) => {
     setSlideDir(1);
     setActivePresentationTab(id);
     startLayoutTransition(() => {
       setPresentationMode(true);
     });
-  }
+  }, [startLayoutTransition]);
 
   return (
     <AuroraBackground
@@ -867,7 +864,7 @@ export default function StudioLanding() {
             transition={{ duration: 0.44, delay: 0.1, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] }}
             /* overflow-hidden clips the horizontal slide; height via CSS transition — no layout measurement */
             style={{ willChange: "transform" }}
-            className={`relative w-[92vw] max-w-[1160px] overflow-hidden transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            className={`relative w-[92vw] max-w-[1160px] overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[height] ${
               presentationMode
                 ? "h-[clamp(22rem,62vh,42rem)]"
                 : "h-[clamp(17rem,52vh,34rem)]"
