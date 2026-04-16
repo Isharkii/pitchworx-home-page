@@ -1,10 +1,11 @@
+import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 
 export interface GammaGenerateResponse {
   gammaUrl: string;
   gammaId: string;
-  embedUrl: string;
-  exportUrl?: string;
+  /** Publicly-hosted PPTX on Vercel Blob — used for the MS Office preview & download */
+  pptxUrl?: string;
   title: string;
   generationId: string;
 }
@@ -59,7 +60,6 @@ export async function POST(req: NextRequest) {
     const raw = await createRes.text();
 
     if (!createRes.ok) {
-      // Truncate potentially huge HTML error pages to a readable message
       const msg = raw.length > 300 ? raw.slice(0, 300) + "…" : raw;
       return NextResponse.json(
         { error: `Gamma rejected the request (${createRes.status}): ${msg}` },
@@ -122,13 +122,38 @@ export async function POST(req: NextRequest) {
     }
 
     if (pollData.status === "completed") {
-      const gammaId = pollData.gammaId ?? "";
+      const gammaId  = pollData.gammaId ?? "";
+      const title    = pollData.title ?? prompt.slice(0, 80);
+      const gammaUrl = pollData.gammaUrl ?? "https://gamma.app";
+
+      // ── Step 3: download PPTX from Gamma and re-host on Vercel Blob ──────────
+      let pptxUrl: string | undefined;
+      if (pollData.exportUrl) {
+        try {
+          const pptxRes = await fetch(pollData.exportUrl);
+          if (pptxRes.ok) {
+            const pptxBytes = await pptxRes.arrayBuffer();
+            const safeName  = `${generationId}.pptx`;
+            const blob = await put(safeName, pptxBytes, {
+              access: "public",
+              contentType:
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+              // Overwrite if regenerated with the same ID
+              allowOverwrite: true,
+            });
+            pptxUrl = blob.url;
+          }
+        } catch (err) {
+          // Non-fatal: preview won't be available but the rest still works
+          console.error("[gamma] blob upload failed:", err);
+        }
+      }
+
       const response: GammaGenerateResponse = {
-        gammaUrl:  pollData.gammaUrl ?? `https://gamma.app`,
+        gammaUrl,
         gammaId,
-        embedUrl:  gammaId ? `https://gamma.app/embed/${gammaId}` : (pollData.gammaUrl ?? ""),
-        exportUrl: pollData.exportUrl,
-        title:     pollData.title ?? prompt.slice(0, 80),
+        pptxUrl,
+        title,
         generationId,
       };
       return NextResponse.json(response);

@@ -348,15 +348,6 @@ function ThemePicker({ value, onChange, disabled }: ThemePickerProps) {
   );
 }
 
-export interface GammaSlide {
-  id: string;
-  title: string;
-  body: string;
-  speakerNotes?: string;
-  imageUrl?: string;
-  layout?: string;
-}
-
 function IconFile() {
   return (
     <svg viewBox="0 0 16 16" className="h-full w-full" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -369,8 +360,8 @@ function IconFile() {
 interface GammaResult {
   gammaUrl: string;
   gammaId: string;
-  embedUrl: string;
-  exportUrl?: string;
+  /** Vercel Blob URL for the PPTX — used for MS Office preview & download */
+  pptxUrl?: string;
   title: string;
   generationId: string;
 }
@@ -1189,11 +1180,10 @@ export default function StudioLanding() {
                         </h2>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
-                        {gammaResult.exportUrl && (
+                        {gammaResult.pptxUrl && (
                           <a
-                            href={gammaResult.exportUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={gammaResult.pptxUrl}
+                            download
                             className="font-ui inline-flex items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--background)]/60 px-3.5 py-2 text-[11px] text-[var(--foreground)] backdrop-blur-sm transition-colors hover:bg-[var(--background)] sm:text-[12px]"
                           >
                             <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1216,16 +1206,25 @@ export default function StudioLanding() {
                       </div>
                     </div>
 
-                    {/* Embedded slides */}
+                    {/* PPTX preview via Microsoft Office Online viewer */}
                     <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--background)]/40">
-                      <iframe
-                        src={gammaResult.embedUrl}
-                        title={gammaResult.title}
-                        allow="fullscreen"
-                        loading="lazy"
-                        className="w-full"
-                        style={{ height: "80vh", border: "none", display: "block" }}
-                      />
+                      {gammaResult.pptxUrl ? (
+                        <iframe
+                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(gammaResult.pptxUrl)}`}
+                          title={gammaResult.title}
+                          allow="fullscreen"
+                          loading="lazy"
+                          className="w-full"
+                          style={{ height: "80vh", border: "none", display: "block" }}
+                        />
+                      ) : (
+                        <div className="flex h-64 items-center justify-center text-[var(--muted)] font-ui text-[13px]">
+                          Preview unavailable —{" "}
+                          <a href={gammaResult.gammaUrl} target="_blank" rel="noopener noreferrer" className="ml-1 underline">
+                            open in Gamma
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}
