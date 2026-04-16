@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { AuroraBackground } from "@/components/ui/aurora-background";
 import { GooeyFilter } from "@/components/ui/gooey-filter";
 import { useScreenSize } from "@/hooks/use-screen-size";
 
@@ -817,10 +818,11 @@ export default function StudioLanding() {
   }, []);
 
   return (
-    <div
-      className={`relative w-screen bg-[var(--background)] text-[var(--foreground)] ${
+    <AuroraBackground
+      showRadialGradient
+      className={`w-screen !bg-[var(--background)] text-[var(--foreground)] ${
         presentationMode
-          ? "min-h-[100dvh] overflow-y-auto overflow-x-hidden"
+          ? "!h-auto min-h-[100dvh] overflow-y-auto overflow-x-hidden"
           : "h-[100dvh] overflow-hidden"
       }`}
     >
@@ -1276,6 +1278,6 @@ export default function StudioLanding() {
           )}
         </div>
       </div>
-    </div>
+    </AuroraBackground>
   );
 }
