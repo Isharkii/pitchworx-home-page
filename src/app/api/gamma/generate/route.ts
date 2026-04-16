@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
         inputText: prompt.trim(),
         textMode: "generate",
         format: "presentation",
+        exportAs: "pptx",
         sharingOptions: { externalAccess: "view" },
       }),
     });

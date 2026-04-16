@@ -1199,7 +1199,7 @@ export default function StudioLanding() {
                             <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M6 2v6M3 6l3 3 3-3M2 10h8" />
                             </svg>
-                            Download
+                            Download PPT
                           </a>
                         )}
                         <a
