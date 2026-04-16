@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export interface GammaGenerateResponse {
   gammaUrl: string;
+  gammaId: string;
+  embedUrl: string;
   exportUrl?: string;
   title: string;
   generationId: string;
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest) {
         inputText: prompt.trim(),
         textMode: "generate",
         format: "presentation",
+        sharingOptions: { externalAccess: "view" },
       }),
     });
 
@@ -86,6 +89,7 @@ export async function POST(req: NextRequest) {
 
     let pollData: {
       status?: string;
+      gammaId?: string;
       gammaUrl?: string;
       exportUrl?: string;
       title?: string;
@@ -117,10 +121,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (pollData.status === "completed") {
+      const gammaId = pollData.gammaId ?? "";
       const response: GammaGenerateResponse = {
-        gammaUrl:     pollData.gammaUrl     ?? `https://gamma.app`,
-        exportUrl:    pollData.exportUrl,
-        title:        pollData.title        ?? prompt.slice(0, 80),
+        gammaUrl:  pollData.gammaUrl ?? `https://gamma.app`,
+        gammaId,
+        embedUrl:  gammaId ? `https://gamma.app/embed/${gammaId}` : (pollData.gammaUrl ?? ""),
+        exportUrl: pollData.exportUrl,
+        title:     pollData.title ?? prompt.slice(0, 80),
         generationId,
       };
       return NextResponse.json(response);

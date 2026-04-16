@@ -368,6 +368,8 @@ function IconFile() {
 
 interface GammaResult {
   gammaUrl: string;
+  gammaId: string;
+  embedUrl: string;
   exportUrl?: string;
   title: string;
   generationId: string;
@@ -1167,47 +1169,63 @@ export default function StudioLanding() {
                   </motion.div>
                 )}
 
-                {/* Result card */}
+                {/* Slide embed */}
                 {!isGenerating && gammaResult && (
                   <motion.div
                     key="result"
-                    initial={{ opacity: 0, y: 16 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] }}
-                    className="rounded-2xl border border-[var(--line)] bg-[var(--background)]/80 backdrop-blur-xl p-6 sm:p-8"
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] }}
                   >
-                    <p className="font-ui text-[10px] uppercase tracking-[0.22em] text-[var(--muted)]/50 mb-1.5">
-                      Presentation ready
-                    </p>
-                    <h2 className="font-display text-[18px] font-semibold leading-snug text-[var(--foreground)] sm:text-[20px] mb-5">
-                      {gammaResult.title}
-                    </h2>
-                    <div className="flex flex-wrap gap-3">
-                      <a
-                        href={gammaResult.gammaUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-ui inline-flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-600"
-                      >
-                        Open in Gamma
-                        <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M2 10L10 2M10 2H5M10 2v5" />
-                        </svg>
-                      </a>
-                      {gammaResult.exportUrl && (
+                    {/* Header row */}
+                    <div className="mb-4 flex items-start justify-between gap-4">
+                      <div>
+                        <p className="font-ui text-[10px] uppercase tracking-[0.22em] text-[var(--muted)]/50 mb-1">
+                          Presentation ready
+                        </p>
+                        <h2 className="font-display text-[17px] font-semibold leading-snug text-[var(--foreground)] sm:text-[19px]">
+                          {gammaResult.title}
+                        </h2>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {gammaResult.exportUrl && (
+                          <a
+                            href={gammaResult.exportUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-ui inline-flex items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--background)]/60 px-3.5 py-2 text-[11px] text-[var(--foreground)] backdrop-blur-sm transition-colors hover:bg-[var(--background)] sm:text-[12px]"
+                          >
+                            <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M6 2v6M3 6l3 3 3-3M2 10h8" />
+                            </svg>
+                            Download
+                          </a>
+                        )}
                         <a
-                          href={gammaResult.exportUrl}
+                          href={gammaResult.gammaUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-ui inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--background)]/60 px-5 py-2.5 text-[13px] text-[var(--foreground)] backdrop-blur-sm transition-colors hover:bg-[var(--background)]"
+                          className="font-ui inline-flex items-center gap-1.5 rounded-xl bg-blue-500 px-3.5 py-2 text-[11px] font-medium text-white transition-colors hover:bg-blue-600 sm:text-[12px]"
                         >
-                          Download
+                          Open in Gamma
                           <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M6 2v6M3 6l3 3 3-3M2 10h8" />
+                            <path d="M2 10L10 2M10 2H5M10 2v5" />
                           </svg>
                         </a>
-                      )}
+                      </div>
+                    </div>
+
+                    {/* Embedded slides */}
+                    <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--background)]/40">
+                      <iframe
+                        src={gammaResult.embedUrl}
+                        title={gammaResult.title}
+                        allow="fullscreen"
+                        loading="lazy"
+                        className="w-full"
+                        style={{ height: "80vh", border: "none", display: "block" }}
+                      />
                     </div>
                   </motion.div>
                 )}
