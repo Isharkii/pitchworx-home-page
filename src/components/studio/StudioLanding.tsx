@@ -83,6 +83,15 @@ function IconUpload() {
   );
 }
 
+function IconBulb() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" className="h-[14px] w-[14px] shrink-0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 2a5 5 0 0 0-2.5 9.33V13a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1.67A5 5 0 0 0 9 2z" />
+      <line x1="7" y1="16" x2="11" y2="16" />
+    </svg>
+  );
+}
+
 // ─── Presentation option cards ─────────────────────────────────────────────────
 
 const PRESENTATION_OPTIONS = [
@@ -458,9 +467,9 @@ const GenerateChatbox = memo(function GenerateChatbox({ onGenerated, onGeneratin
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerate();
         }}
         placeholder="Describe your presentation… (e.g. 'Series A pitch deck for a B2B SaaS analytics startup')"
-        rows={4}
         disabled={isLoading}
-        className="font-ui w-full resize-none rounded-xl border border-[var(--line)] bg-[var(--background)]/90 px-4 py-3 text-[13px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)]/45 transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/25 min-h-[100px] sm:text-[14px] disabled:opacity-50"
+        className="font-ui w-full resize-none rounded-xl border border-[var(--line)] bg-[var(--background)]/90 px-4 py-3 text-[13px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)]/45 transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/25 overflow-y-auto sm:text-[14px] disabled:opacity-50"
+        style={{ height: "200px" }}
       />
 
       {/* Error */}
@@ -553,6 +562,108 @@ const GenerateChatbox = memo(function GenerateChatbox({ onGenerated, onGeneratin
     </div>
   );
 });
+
+// ─── Card-by-card control tip popout ───────────────────────────────────────────
+
+const TIP_EXAMPLE = `Intro to our new strategy
+
+Key point 1
+Key point 2
+Key point 3
+---
+
+Key metrics from Q1
+
+Key point 1
+Key point 2
+Key point 3
+---
+
+Next steps + ownership
+
+Key point 1
+...`;
+
+const tipPopoutVariants: Variants = {
+  hidden:  { opacity: 0, y: -6, scale: 0.97 },
+  visible: { opacity: 1, y: 0,  scale: 1,
+    transition: { duration: 0.16, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] } },
+  exit:    { opacity: 0, y: -4, scale: 0.97, transition: { duration: 0.1 } },
+};
+
+function TipPopout() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`font-ui flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] leading-none transition-colors duration-150 sm:text-[11px] ${
+          open
+            ? "border-violet-300 bg-violet-50/70 text-violet-600 dark:border-violet-500/50 dark:bg-violet-950/30 dark:text-violet-400"
+            : "border-[var(--line)] bg-[var(--background)]/70 text-[var(--muted)] hover:border-violet-300/60 hover:text-violet-600 dark:hover:border-violet-500/40 dark:hover:text-violet-400"
+        }`}
+      >
+        <IconBulb />
+        Optional: card-by-card control
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="tip-card"
+            variants={tipPopoutVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="absolute right-0 top-full mt-2 z-50 w-[min(22rem,90vw)] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--background)] shadow-[0_12px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
+              <div className="flex items-center gap-2">
+                <IconBulb />
+                <span className="font-ui text-[11px] font-semibold text-[var(--foreground)]">
+                  Card-by-card control
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close tip"
+                className="flex h-5 w-5 items-center justify-center rounded-md text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+              >
+                <svg viewBox="0 0 12 12" className="h-[10px] w-[10px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                  <line x1="1" y1="1" x2="11" y2="11" />
+                  <line x1="11" y1="1" x2="1" y2="11" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 space-y-3">
+              <p className="font-ui text-[12px] leading-relaxed text-[var(--muted)]">
+                Know what you want on each card? Add three dashes{" "}
+                <code className="rounded bg-[var(--muted)]/10 px-1 py-0.5 font-mono text-[11px] text-[var(--foreground)]">
+                  ---
+                </code>{" "}
+                between each section.
+              </p>
+
+              <p className="font-ui text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]/50">
+                Example
+              </p>
+
+              <pre className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--muted)]/[0.04] p-3 font-mono text-[10px] leading-relaxed text-[var(--muted)] whitespace-pre-wrap">
+                {TIP_EXAMPLE}
+              </pre>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 // ─── Slide card ────────────────────────────────────────────────────────────────
 
@@ -894,11 +1005,7 @@ export default function StudioLanding() {
                Framer Motion promotes it automatically during the animation; keeping will-change permanently
                would waste a GPU layer for the component's entire lifetime. */
             className={`relative w-[92vw] max-w-[1160px] overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[height] ${
-              presentationMode && activePresentationTab === "generate"
-                ? "h-[clamp(17rem,44vh,22rem)]"
-                : presentationMode
-                ? "h-[clamp(22rem,62vh,42rem)]"
-                : "h-[clamp(17rem,52vh,34rem)]"
+              activePresentationTab !== null ? "h-[36rem]" : "h-[29rem]"
             }`}
           >
             <AnimatePresence custom={slideDir} mode="sync" initial={false}>
@@ -1178,6 +1285,15 @@ export default function StudioLanding() {
                       </button>
                     ))}
                   </div>
+
+                  {/* TipPopout — outside the scrollable content area so it never
+                      gets clipped by overflow-y-auto. Floats at top-right of
+                      the content zone, only shown on the generate tab. */}
+                  {activePresentationTab === "generate" && (
+                    <div className="absolute right-3 sm:right-4 z-30 top-[calc(3.5rem+10px)]">
+                      <TipPopout />
+                    </div>
+                  )}
 
                   {/* Content area */}
                   <div className="absolute left-0 right-0 bottom-0 top-12 sm:top-14 md:top-16 z-20 overflow-y-auto">
