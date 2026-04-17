@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export type ScreenSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 
@@ -40,7 +40,10 @@ const useScreenSize = (): ComparableScreenSize => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  return new ComparableScreenSize(screenSize);
+  // Memoize the object so the reference is stable across parent re-renders.
+  // Without this, every StudioLanding state change returned a new object
+  // instance, invalidating downstream hooks that depend on screenSize.
+  return useMemo(() => new ComparableScreenSize(screenSize), [screenSize]);
 };
 
 export { useScreenSize };

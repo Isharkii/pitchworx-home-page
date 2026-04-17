@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { AuroraBackground } from "@/components/ui/aurora-background";
+import { AuroraBackgroundFixed } from "@/components/ui/aurora-background";
 import { GooeyFilter } from "@/components/ui/gooey-filter";
 import { useScreenSize } from "@/hooks/use-screen-size";
 
@@ -448,7 +448,7 @@ const GenerateChatbox = memo(function GenerateChatbox({ onGenerated, onGeneratin
   }
 
   return (
-    <div className="flex flex-col gap-4 p-5 sm:p-6 md:p-8">
+    <div className="flex flex-col gap-3 p-4 sm:p-5 md:p-6">
 
       {/* Textarea */}
       <textarea
@@ -458,9 +458,9 @@ const GenerateChatbox = memo(function GenerateChatbox({ onGenerated, onGeneratin
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerate();
         }}
         placeholder="Describe your presentation… (e.g. 'Series A pitch deck for a B2B SaaS analytics startup')"
-        rows={5}
+        rows={4}
         disabled={isLoading}
-        className="font-ui w-full resize-none rounded-xl border border-[var(--line)] bg-[var(--background)]/90 px-4 py-3.5 text-[13px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)]/45 transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/25 min-h-[120px] sm:text-[14px] disabled:opacity-50"
+        className="font-ui w-full resize-none rounded-xl border border-[var(--line)] bg-[var(--background)]/90 px-4 py-3 text-[13px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)]/45 transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/25 min-h-[100px] sm:text-[14px] disabled:opacity-50"
       />
 
       {/* Error */}
@@ -813,34 +813,49 @@ export default function StudioLanding() {
     // layout change never competes with the slide animation.
     if (!presentationModeRef.current) {
       if (layoutTimerRef.current) clearTimeout(layoutTimerRef.current);
-      layoutTimerRef.current = setTimeout(() => setPresentationMode(true), 350);
+      // 520ms > spring settle time (~480ms at stiffness:240 damping:28)
+      // so the height layout transition never competes with the slide spring.
+      layoutTimerRef.current = setTimeout(() => setPresentationMode(true), 520);
     }
   }, []);
 
   return (
-    <AuroraBackground
-      showRadialGradient
-      className={`w-screen !bg-[var(--background)] text-[var(--foreground)] ${
-        presentationMode
-          ? "!h-auto min-h-[100dvh] overflow-y-auto overflow-x-hidden"
-          : "h-[100dvh] overflow-hidden"
-      }`}
-    >
-      <div aria-hidden className="bg-paper-grid pointer-events-none absolute inset-0 opacity-40" />
-      {/* Blobs are cheap static blurs — only render in top-level views, not during the scrollable presentation view */}
-      {activePresentationTab === null && (
-        <>
-          <div aria-hidden className="pointer-events-none absolute left-[-8%] top-[-10%] h-[clamp(12rem,26vw,28rem)] w-[clamp(12rem,26vw,28rem)] rounded-full bg-[var(--spot-b)] opacity-40 blur-3xl" />
-          <div aria-hidden className="pointer-events-none absolute bottom-[-12%] right-[-6%] h-[clamp(10rem,20vw,22rem)] w-[clamp(10rem,20vw,22rem)] rounded-full bg-[var(--spot-a)] opacity-40 blur-3xl" />
-        </>
-      )}
+    // Outer shell: handles scroll vs fixed-height layout. NOT the visual background.
+    // The background is AuroraBackgroundFixed below — a position:fixed sibling,
+    // completely decoupled from this element and all animated children.
+    <main className={`relative w-screen text-[var(--foreground)] ${
+      presentationMode
+        ? "min-h-[100dvh] overflow-y-auto overflow-x-hidden"
+        : "h-[100dvh] overflow-hidden"
+    }`}>
+      {/*
+        AuroraBackgroundFixed lives in its OWN compositing layer (position:fixed),
+        isolated from the folder's will-change:transform layers.
+        memo() ensures it never re-renders regardless of StudioLanding state.
 
-      <GooeyFilter id="studio-goo" strength={screenSize.lessThan("md") ? 8 : 14} />
+        BEFORE: aurora blur/blend was an ANCESTOR of animated slides →
+          GPU had to flatten and re-composite aurora+slides together every frame.
+        AFTER: aurora is a fixed sibling → GPU composites them independently.
+      */}
+      <AuroraBackgroundFixed showRadialGradient />
 
-      {/* Shell */}
-      <div className={`relative flex flex-col pt-[100px] sm:pt-[112px] md:pt-[128px] px-5 sm:px-6 md:px-[60px] ${
-        presentationMode ? "pb-20" : "h-full"
-      }`}>
+      {/* Content sits at z-index 1, separate stacking context from the fixed aurora */}
+      <div className="relative" style={{ zIndex: 1 }}>
+        <div aria-hidden className="bg-paper-grid pointer-events-none absolute inset-0 opacity-40" />
+        {/* Blobs are cheap static blurs — only render in top-level views, not during the scrollable presentation view */}
+        {activePresentationTab === null && (
+          <>
+            <div aria-hidden className="pointer-events-none absolute left-[-8%] top-[-10%] h-[clamp(12rem,26vw,28rem)] w-[clamp(12rem,26vw,28rem)] rounded-full bg-[var(--spot-b)] opacity-40 blur-3xl" />
+            <div aria-hidden className="pointer-events-none absolute bottom-[-12%] right-[-6%] h-[clamp(10rem,20vw,22rem)] w-[clamp(10rem,20vw,22rem)] rounded-full bg-[var(--spot-a)] opacity-40 blur-3xl" />
+          </>
+        )}
+
+        <GooeyFilter id="studio-goo" strength={screenSize.lessThan("md") ? 8 : 14} />
+
+        {/* Shell */}
+        <div className={`relative flex flex-col pt-[100px] sm:pt-[112px] md:pt-[128px] px-5 sm:px-6 md:px-[60px] ${
+          presentationMode ? "pb-20" : "h-full"
+        }`}>
 
         {/* Close / Back button */}
         <motion.div
@@ -875,7 +890,9 @@ export default function StudioLanding() {
             /* overflow-hidden clips the horizontal slide; height via CSS transition — no layout measurement */
             style={{ willChange: "transform" }}
             className={`relative w-[92vw] max-w-[1160px] overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[height] ${
-              presentationMode
+              presentationMode && activePresentationTab === "generate"
+                ? "h-[clamp(17rem,44vh,22rem)]"
+                : presentationMode
                 ? "h-[clamp(22rem,62vh,42rem)]"
                 : "h-[clamp(17rem,52vh,34rem)]"
             }`}
@@ -1280,7 +1297,8 @@ export default function StudioLanding() {
             </div>
           )}
         </div>
-      </div>
-    </AuroraBackground>
+        </div>{/* end Shell */}
+      </div>{/* end content z-1 wrapper */}
+    </main>
   );
 }
