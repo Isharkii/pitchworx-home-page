@@ -73,7 +73,17 @@ export const AuroraBackgroundFixed = memo(function AuroraBackgroundFixed({
     <div
       aria-hidden
       className="pointer-events-none fixed inset-0 z-0 bg-[var(--background)]"
-      style={{ transition: "background-color 200ms ease" }}
+      style={{
+        transition: "background-color 200ms ease",
+        // isolation:isolate creates an explicit stacking context boundary so
+        // the aurora's after:mix-blend-difference is fully contained inside
+        // this element and cannot interact with any sibling compositing layer.
+        isolation: "isolate",
+        // contain:paint tells the compositor that all painting is self-contained
+        // within this element's bounds — it can cache this layer independently
+        // without checking whether it affects anything outside its box.
+        contain: "paint",
+      }}
     >
       <div className="absolute inset-0 overflow-hidden">
         <div

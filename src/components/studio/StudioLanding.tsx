@@ -767,14 +767,13 @@ export default function StudioLanding() {
   const [presentationMode, setPresentationMode] = useState(false);
   const [gammaResult,      setGammaResult]      = useState<GammaResult | null>(null);
   const [isGenerating,     setIsGenerating]     = useState(false);
-  const layoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Lifecycle-based sync: fires when the entering slide spring settles.
+  // Replaced setTimeout(520) — timing was fragile on slow devices.
+  const onSlideSettledRef = useRef<(() => void) | null>(null);
   // Read presentationMode in callbacks without adding it to useCallback deps
   const presentationModeRef = useRef(presentationMode);
   presentationModeRef.current = presentationMode;
   const screenSize = useScreenSize();
-
-  // Clean up any pending layout timer on unmount
-  useEffect(() => () => { if (layoutTimerRef.current) clearTimeout(layoutTimerRef.current); }, []);
 
   const activeTabId = TABS[activeIndex].id;
   const activeLogos = activeTabId === "ai" ? AI_SERVICES : SERVICES;
@@ -803,19 +802,17 @@ export default function StudioLanding() {
   }, [activePresentationTab, selectedService, router]);
 
   // Open a presentation sub-tab: start the slide animation immediately,
-  // defer the heavy layout expansion (outer container + folder height) so it
-  // doesn't block the first animation frame.
+  // then expand layout ONLY after the entering spring fully settles.
+  // onSlideSettledRef is picked up by the presentation-sub motion.div's
+  // onAnimationComplete — no setTimeout, no hardcoded timing.
   const openPresentationTab = useCallback((id: string) => {
     setSlideDir(1);
     setActivePresentationTab(id);
-    // Only expand layout when not already in presentation mode.
-    // Delay until after the slide spring settles (~300ms) so the height
-    // layout change never competes with the slide animation.
     if (!presentationModeRef.current) {
-      if (layoutTimerRef.current) clearTimeout(layoutTimerRef.current);
-      // 520ms > spring settle time (~480ms at stiffness:240 damping:28)
-      // so the height layout transition never competes with the slide spring.
-      layoutTimerRef.current = setTimeout(() => setPresentationMode(true), 520);
+      onSlideSettledRef.current = () => {
+        setPresentationMode(true);
+        onSlideSettledRef.current = null;
+      };
     }
   }, []);
 
@@ -839,8 +836,8 @@ export default function StudioLanding() {
       */}
       <AuroraBackgroundFixed showRadialGradient />
 
-      {/* Content sits at z-index 1, separate stacking context from the fixed aurora */}
-      <div className="relative" style={{ zIndex: 1 }}>
+      {/* Content: explicit stacking context, isolated from aurora's mix-blend-difference */}
+      <div className="relative" style={{ zIndex: 1, isolation: "isolate" }}>
         <div aria-hidden className="bg-paper-grid pointer-events-none absolute inset-0 opacity-40" />
         {/* Blobs are cheap static blurs — only render in top-level views, not during the scrollable presentation view */}
         {activePresentationTab === null && (
@@ -887,8 +884,10 @@ export default function StudioLanding() {
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0  }}
             transition={{ duration: 0.44, delay: 0.1, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] }}
-            /* overflow-hidden clips the horizontal slide; height via CSS transition — no layout measurement */
-            style={{ willChange: "transform" }}
+            /* overflow-hidden clips the horizontal slide; height via CSS transition — no layout measurement.
+               No will-change here: this div animates only once on mount (0.44s), then is static forever.
+               Framer Motion promotes it automatically during the animation; keeping will-change permanently
+               would waste a GPU layer for the component's entire lifetime. */
             className={`relative w-[92vw] max-w-[1160px] overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[height] ${
               presentationMode && activePresentationTab === "generate"
                 ? "h-[clamp(17rem,44vh,22rem)]"
@@ -1128,6 +1127,14 @@ export default function StudioLanding() {
                   exit="exit"
                   className="absolute inset-0"
                   style={{ willChange: "transform" }}
+                  onAnimationComplete={(definition) => {
+                    // "center" = the entering spring has fully settled.
+                    // Trigger layout expansion ONLY at this lifecycle point —
+                    // no setTimeout, no hardcoded timing, no race conditions.
+                    if (definition === "center" && onSlideSettledRef.current) {
+                      onSlideSettledRef.current();
+                    }
+                  }}
                 >
                   {/* Gooey filter layer */}
                   <div style={{ filter: "url(#studio-goo)", pointerEvents: "none" }} className="flex h-full flex-col">
