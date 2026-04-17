@@ -370,6 +370,7 @@ const ThemePicker = memo(function ThemePicker({ value, onChange, disabled }: The
                 <span key={i} className="inline-block h-3 w-3 rounded-[2px]" style={{ background: hex }} />
               ))}
             </span>
+            <span className="text-[10px] leading-none">Themes</span>
             <span
               role="button"
               aria-label="Clear theme"
@@ -382,12 +383,15 @@ const ThemePicker = memo(function ThemePicker({ value, onChange, disabled }: The
             </span>
           </>
         ) : (
-          <svg viewBox="0 0 18 18" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 1.5A7.5 7.5 0 1 0 16.5 9a2.5 2.5 0 0 1-2.5-2.5A2.5 2.5 0 0 0 11.5 4" />
-            <circle cx="5.5" cy="7" r="1" fill="currentColor" stroke="none" />
-            <circle cx="5.5" cy="11" r="1" fill="currentColor" stroke="none" />
-            <circle cx="9"   cy="13" r="1" fill="currentColor" stroke="none" />
-          </svg>
+          <>
+            <svg viewBox="0 0 18 18" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 1.5A7.5 7.5 0 1 0 16.5 9a2.5 2.5 0 0 1-2.5-2.5A2.5 2.5 0 0 0 11.5 4" />
+              <circle cx="5.5" cy="7" r="1" fill="currentColor" stroke="none" />
+              <circle cx="5.5" cy="11" r="1" fill="currentColor" stroke="none" />
+              <circle cx="9"   cy="13" r="1" fill="currentColor" stroke="none" />
+            </svg>
+            <span className="text-[10px] leading-none">Themes</span>
+          </>
         )}
       </motion.button>
 
@@ -468,8 +472,9 @@ const GenerateChatbox = memo(function GenerateChatbox({ onGenerated, onGeneratin
         }}
         placeholder="Describe your presentation… (e.g. 'Series A pitch deck for a B2B SaaS analytics startup')"
         disabled={isLoading}
-        className="font-ui w-full resize-none rounded-xl border border-[var(--line)] bg-[var(--background)]/90 px-4 py-3 text-[13px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)]/45 transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/25 overflow-y-auto sm:text-[14px] disabled:opacity-50"
-        style={{ height: "200px" }}
+        rows={4}
+        className="font-ui w-full resize-none rounded-xl border border-[var(--line)] bg-[var(--background)]/90 px-4 py-3 text-[13px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)]/45 transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/25 sm:text-[14px] disabled:opacity-50"
+        style={{ minHeight: "100px" }}
       />
 
       {/* Error */}
@@ -532,6 +537,9 @@ const GenerateChatbox = memo(function GenerateChatbox({ onGenerated, onGeneratin
         {/* Theme picker */}
         <ThemePicker value={theme} onChange={setTheme} disabled={isLoading} />
 
+        {/* Tips */}
+        <TipPopout disabled={isLoading} />
+
         {/* Spacer */}
         <div className="flex-1" />
 
@@ -563,6 +571,111 @@ const GenerateChatbox = memo(function GenerateChatbox({ onGenerated, onGeneratin
   );
 });
 
+// ─── Paste-in-text chatbox ────────────────────────────────────────────────────
+
+interface PasteTextChatboxProps {
+  onCreated: (result: GammaResult) => void;
+  onCreatingChange: (loading: boolean) => void;
+}
+
+const PasteTextChatbox = memo(function PasteTextChatbox({ onCreated, onCreatingChange }: PasteTextChatboxProps) {
+  const [text, setText]         = useState("");
+  const [theme, setTheme]       = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError]       = useState<string | null>(null);
+
+  async function handleCreate() {
+    if (!text.trim() || isLoading) return;
+    setError(null);
+    setIsLoading(true);
+    onCreatingChange(true);
+
+    try {
+      const res = await fetch("/api/gamma/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: text.trim(), themeId: theme || undefined }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data?.error ?? "Creation failed. Please try again.");
+        return;
+      }
+
+      onCreated(data as GammaResult);
+    } catch {
+      setError("Network error. Please check your connection and try again.");
+    } finally {
+      setIsLoading(false);
+      onCreatingChange(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 p-4 sm:p-5 md:p-6">
+
+      {/* Textarea */}
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleCreate();
+        }}
+        placeholder="Paste your notes, outline, or existing content here…"
+        disabled={isLoading}
+        className="font-ui w-full resize-none rounded-xl border border-[var(--line)] bg-[var(--background)]/90 px-4 py-3 text-[13px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)]/45 transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/25 overflow-y-auto sm:text-[14px] disabled:opacity-50"
+        style={{ height: "200px" }}
+      />
+
+      {/* Error */}
+      {error && (
+        <p className="font-ui rounded-lg border border-red-200/60 bg-red-50/60 px-3.5 py-2.5 text-[11px] text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400 sm:text-[12px]">
+          {error}
+        </p>
+      )}
+
+      {/* Toolbar */}
+      <div className="flex items-center gap-2.5">
+
+        {/* Theme picker */}
+        <ThemePicker value={theme} onChange={setTheme} disabled={isLoading} />
+
+        {/* Tips */}
+        <TipPopout disabled={isLoading} />
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Hint */}
+        {!isLoading && (
+          <span className="font-ui hidden text-[10px] text-[var(--muted)]/40 sm:block">
+            ⌘↵ to create
+          </span>
+        )}
+
+        {/* Create */}
+        <button
+          type="button"
+          onClick={handleCreate}
+          disabled={isLoading || !text.trim()}
+          className="font-ui shrink-0 inline-flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2 text-[12px] font-medium text-white transition-colors duration-200 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:text-[13px]"
+        >
+          {isLoading ? (
+            <>
+              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="32" strokeDashoffset="12" strokeLinecap="round" />
+              </svg>
+              Creating…
+            </>
+          ) : "Create"}
+        </button>
+      </div>
+    </div>
+  );
+});
+
 // ─── Card-by-card control tip popout ───────────────────────────────────────────
 
 const TIP_EXAMPLE = `Intro to our new strategy
@@ -585,39 +698,43 @@ Key point 1
 ...`;
 
 const tipPopoutVariants: Variants = {
-  hidden:  { opacity: 0, y: -6, scale: 0.97 },
-  visible: { opacity: 1, y: 0,  scale: 1,
+  hidden:  { opacity: 0, y: 8, scale: 0.97 },
+  visible: { opacity: 1, y: 0, scale: 1,
     transition: { duration: 0.16, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] } },
-  exit:    { opacity: 0, y: -4, scale: 0.97, transition: { duration: 0.1 } },
+  exit:    { opacity: 0, y: 4, scale: 0.97, transition: { duration: 0.1 } },
 };
 
-function TipPopout() {
-  const [open, setOpen] = useState(false);
+function TipPopout({ disabled }: { disabled?: boolean }) {
+  const [open, setOpen]     = useState(false);
+  const [pos, setPos]       = useState({ bottom: 0, left: 0 });
+  const [mounted, setMounted] = useState(() => typeof window !== "undefined");
+  const triggerRef          = useRef<HTMLButtonElement>(null);
 
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={`font-ui flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] leading-none transition-colors duration-150 sm:text-[11px] ${
-          open
-            ? "border-violet-300 bg-violet-50/70 text-violet-600 dark:border-violet-500/50 dark:bg-violet-950/30 dark:text-violet-400"
-            : "border-[var(--line)] bg-[var(--background)]/70 text-[var(--muted)] hover:border-violet-300/60 hover:text-violet-600 dark:hover:border-violet-500/40 dark:hover:text-violet-400"
-        }`}
-      >
-        <IconBulb />
-        Optional: card-by-card control
-      </button>
+  useEffect(() => { setMounted(true); }, []);
 
-      <AnimatePresence>
-        {open && (
+  function handleToggle() {
+    if (!open && triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      const bottom = window.innerHeight - r.top + 8;
+      const left = Math.min(r.left, window.innerWidth - 352 - 16);
+      setPos({ bottom, left });
+    }
+    setOpen((v) => !v);
+  }
+
+  const popout = (
+    <AnimatePresence>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-[9998]" aria-hidden onClick={() => setOpen(false)} />
           <motion.div
             key="tip-card"
             variants={tipPopoutVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="absolute right-0 top-full mt-2 z-50 w-[min(22rem,90vw)] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--background)] shadow-[0_12px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+            style={{ position: "fixed", bottom: pos.bottom, left: pos.left, zIndex: 9999 }}
+            className="w-[min(22rem,90vw)] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--background)] shadow-[0_12px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
@@ -659,8 +776,31 @@ function TipPopout() {
               </pre>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </>
+      )}
+    </AnimatePresence>
+  );
+
+  return (
+    <div className="relative">
+      <motion.button
+        ref={triggerRef}
+        type="button"
+        whileTap={{ scale: 0.95 }}
+        disabled={disabled}
+        onClick={handleToggle}
+        aria-label="Tips"
+        className={`font-ui flex h-8 items-center gap-1.5 rounded-lg border px-2 transition-colors duration-150 disabled:opacity-40 ${
+          open
+            ? "border-violet-300 bg-violet-50/60 text-violet-600 dark:border-violet-600/50 dark:bg-violet-950/30 dark:text-violet-400"
+            : "border-black/[0.08] bg-[var(--background)]/60 text-gray-400 hover:border-violet-300 hover:text-violet-600 dark:border-white/[0.08] dark:text-white/30 dark:hover:border-violet-500/60 dark:hover:text-violet-400"
+        }`}
+      >
+        <IconBulb />
+        <span className="text-[10px] leading-none">Tips</span>
+      </motion.button>
+
+      {mounted && createPortal(popout, document.body)}
     </div>
   );
 }
@@ -924,7 +1064,7 @@ export default function StudioLanding() {
     // The other tabs (text, template, import) have no sub-content — triggering
     // presentationMode for them caused a pointless folder expansion (52vh→62vh)
     // with nothing inside, which the user perceived as lag after the slide spring.
-    if (!presentationModeRef.current && id === "generate") {
+    if (!presentationModeRef.current && (id === "generate" || id === "text")) {
       onSlideSettledRef.current = () => {
         setPresentationMode(true);
         onSlideSettledRef.current = null;
@@ -1005,7 +1145,11 @@ export default function StudioLanding() {
                Framer Motion promotes it automatically during the animation; keeping will-change permanently
                would waste a GPU layer for the component's entire lifetime. */
             className={`relative w-[92vw] max-w-[1160px] overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[height] ${
-              activePresentationTab !== null ? "h-[36rem]" : "h-[29rem]"
+              presentationMode && activePresentationTab === "text"
+                ? "h-[36rem]"
+                : presentationMode
+                  ? "h-[22rem]"
+                  : "h-[29rem]"
             }`}
           >
             <AnimatePresence custom={slideDir} mode="sync" initial={false}>
@@ -1286,15 +1430,6 @@ export default function StudioLanding() {
                     ))}
                   </div>
 
-                  {/* TipPopout — outside the scrollable content area so it never
-                      gets clipped by overflow-y-auto. Floats at top-right of
-                      the content zone, only shown on the generate tab. */}
-                  {activePresentationTab === "generate" && (
-                    <div className="absolute right-3 sm:right-4 z-30 top-[calc(3.5rem+10px)]">
-                      <TipPopout />
-                    </div>
-                  )}
-
                   {/* Content area */}
                   <div className="absolute left-0 right-0 bottom-0 top-12 sm:top-14 md:top-16 z-20 overflow-y-auto">
                     <AnimatePresence mode="wait">
@@ -1309,6 +1444,12 @@ export default function StudioLanding() {
                           <GenerateChatbox
                             onGenerated={setGammaResult}
                             onGeneratingChange={setIsGenerating}
+                          />
+                        )}
+                        {activePresentationTab === "text" && (
+                          <PasteTextChatbox
+                            onCreated={setGammaResult}
+                            onCreatingChange={setIsGenerating}
                           />
                         )}
                       </motion.div>
