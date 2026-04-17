@@ -808,7 +808,12 @@ export default function StudioLanding() {
   const openPresentationTab = useCallback((id: string) => {
     setSlideDir(1);
     setActivePresentationTab(id);
-    if (!presentationModeRef.current) {
+    // Only "generate" has content below the folder (chatbox + slide result),
+    // so only it needs presentationMode (scrollable shell + folder resize).
+    // The other tabs (text, template, import) have no sub-content — triggering
+    // presentationMode for them caused a pointless folder expansion (52vh→62vh)
+    // with nothing inside, which the user perceived as lag after the slide spring.
+    if (!presentationModeRef.current && id === "generate") {
       onSlideSettledRef.current = () => {
         setPresentationMode(true);
         onSlideSettledRef.current = null;
