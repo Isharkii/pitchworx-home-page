@@ -827,7 +827,7 @@ const GAMMA_TEMPLATES = [
   { name: "Sales Incentive",                            gammaId: "51vxh70upqlf90b", photo: "/template_photos/sales incentive.avif"                                           },
   { name: "Brand Guidelines",                           gammaId: "8031m8uwg626diu", photo: "/template_photos/Brand-Guidelines.avif"                                          },
   { name: "Team Retrospective",                         gammaId: "7mc6a2s1l5hmkb3", photo: "/template_photos/Team-Retrospective__1_.avif"                                    },
-  { name: "Our Team",                                   gammaId: "1bjx27w6cv1zldy", photo: "/template_photos/Our-Team.avif"                                                  },
+  { name: "Our Team",                                   gammaId: "g_n6a0tpb9t127d24", photo: "/template_photos/Our-Team.avif"                                                 },
 ] as const;
 
 // ─── Template selector ─────────────────────────────────────────────────────────
@@ -937,9 +937,9 @@ const TemplateChatbox = memo(function TemplateChatbox({
           Back
         </button>
         <div className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--background)]/60 px-2.5 py-1.5">
-          <div className="h-7 w-10 shrink-0 overflow-hidden rounded-md">
+          <div className="h-7 w-10 shrink-0 overflow-hidden rounded-md bg-[var(--muted)]/10">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={templatePhoto} alt={templateName} className="h-full w-full object-cover" />
+            <img src={templatePhoto} alt={templateName} className="h-full w-full object-contain" />
           </div>
           <span className="font-ui text-[11px] text-[var(--foreground)]">{templateName}</span>
         </div>
