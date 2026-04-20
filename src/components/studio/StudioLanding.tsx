@@ -1093,22 +1093,13 @@ function VideoPreviews() {
 }
 
 function PresentationPreviews() {
-  const accents = ["bg-[var(--spot-b)]", "bg-[var(--spot-a)]", "bg-[var(--muted)]/40"];
+  const previews = [GAMMA_TEMPLATES[0], GAMMA_TEMPLATES[6], GAMMA_TEMPLATES[13]];
   return (
     <div className="grid grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-      {accents.map((accent, i) => (
-        <div key={i} className="aspect-[4/3] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--background)]/50">
-          <div className={`h-[35%] w-full ${accent} flex items-end px-3 pb-2`}>
-            <div className="space-y-1">
-              <div className="h-2 w-16 rounded bg-[var(--background)]/60" />
-              <div className="h-1.5 w-10 rounded bg-[var(--background)]/40" />
-            </div>
-          </div>
-          <div className="space-y-1.5 p-3">
-            {[0,1,2].map(j => (
-              <div key={j} className={`h-1.5 rounded bg-[var(--muted)]/20 ${j === 0 ? "w-full" : j === 1 ? "w-4/5" : "w-3/5"}`} />
-            ))}
-          </div>
+      {previews.map((tpl) => (
+        <div key={tpl.gammaId} className="aspect-[4/3] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--background)]/50">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={tpl.photo} alt={tpl.name} className="h-full w-full object-contain" />
         </div>
       ))}
     </div>
